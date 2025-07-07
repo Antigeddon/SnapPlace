@@ -103,7 +103,7 @@ public class slPlaceBetween implements Listener {
             p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
         }
 
-        event.setCancelled(true); //
+        event.setCancelled(true);
 
         BlockState slabBlockState = slab.getState();
         BlockPlaceEvent placeEvent = new BlockPlaceEvent(
@@ -125,8 +125,6 @@ public class slPlaceBetween implements Listener {
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
-
-//        event.setCancelled(true);
 
         Block above = slab.getRelative(BlockFace.UP);
         Material aboveType = above.getType();

@@ -67,20 +67,6 @@ public class bMain extends JavaPlugin implements Listener {
         return "§f[§6Snap§ePlace§f] ";
 
     }
-
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-        Player player = event.getPlayer();
-        Material placedBlock = event.getBlockPlaced().getType();
-        byte placedBlockData = event.getBlockPlaced().getData();
-        Block block = event.getBlockPlaced();
-
-        int x = block.getX();
-        int y = block.getY();
-        int z = block.getZ();
-
-        player.sendMessage(ChatColor.GREEN + "Tu as placé un bloc : " + ChatColor.GOLD + placedBlock.name() + ":" + placedBlockData + " en (" + x + ", " + y + ", " + z + ")");
-    }
 }
 
 
