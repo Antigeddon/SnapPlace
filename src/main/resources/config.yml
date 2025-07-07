@@ -1,0 +1,55 @@
+snow-layers:
+    enable: true
+    # If "true", players will be able to place snow layers on top of each other. (Default: true)
+    need-sneaking: false
+    # If "true", players must be sneaking to place snow layers on top of each other. (Default: false)
+    replace-snow-with-itself: false
+    # If "true", players will be able to replace higher snow layers with regular ones. It is highly recommended to keep this setting "false" to avoid potential issues.
+    # However, if you prefer to maintain the default vanilla behavior, you may enable it.
+    # Effective only when "snow-layers.enable" is set to "false". (Default: false)
+
+
+better-placements:
+    enable: true
+    # If "true", the BetterPlacements system will be enabled. (Default: true)
+    orientable-rails:
+        enable: true
+        # If "true", rails orientation depends on the player's facing direction. (Default: true)
+        need-sneaking: true
+        # If "true", players must sneak for rail orientation to work. (Default: true)
+
+    placeable-on-walls-and-roofs:
+        enable: true
+        # If "true", allows placing fences, pumpkins, and jack-o'-lanterns without full block support. (Default: true)
+        need-sneaking: true
+        # If "true", players must sneak to place these blocks without support. (Default: true)
+
+    place-on-interactables: true
+    # If "true", allows placing certain blocks on interactable blocks (e.g., workbench, chest). (Default: true)
+
+
+    ############################################################
+    #                   Interactable Blocks:                   #
+    ############################################################
+    #   - Workbench                          - Chest           #
+    #   - Furnace                            - NoteBlock       #
+    #   - Dispenser                          - Doors           #
+    #   - Bed                                - Button          #
+    #   - Diode                              - Cake            #
+    #   - Trapdoor                           - Lever           #
+    ############################################################
+
+    # (NOTE: Signs will remain empty and cannot be directly edited by players, but "/editsign" can).
+
+better-slabs:
+    enable: true
+    # If "true", the BetterSlabs system will be enabled and will automatically prevent slab merging. (Default: true)
+    # The system scans downward only if the block directly beneath is a slab, and it continues checking through connected slabs, instead of scanning all blocks below the target.
+
+    place-between:
+        enable: true
+        # If "true", allows placing slabs between existing slabs (middle placement). Default: true
+        # (May impact performance if used maliciously. It scans below the target block to ensure slab separation.) (Default: true)
+        need-sneaking: true
+        # If "true", players must sneak to place slabs between others. (Default: true)
+

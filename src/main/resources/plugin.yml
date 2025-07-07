@@ -1,0 +1,59 @@
+name: SnapPlace
+main: me.antigeddon.snapplace.bMain
+version: 1.0
+author: Antigeddon
+description: >
+  Enhances block placement mechanics, allowing more flexible and intuitive building in Minecraft Beta 1.7.3.
+
+commands:
+  editsign:
+    aliases: [esign]
+    description: Modify the text on signs with line-specific input
+    usage: /<command> l1:(<Text>) l2:(<Text>) l3:(<Text>) l4:(<Text>).
+
+permissions:
+  SnapPlace.*:
+    description: Gives access to all SnapPlace permissions
+    default: op
+    children:
+      SnapPlace.snowlayers: true
+      SnapPlace.betterplacements.*: true
+      SnapPlace.betterslabs: true
+      SnapPlace.editsign: true
+
+  SnapPlace.editsign:
+    description: Allows players to edit sign text using line-specific input via /editsign.
+    default: true
+
+  SnapPlace.snowlayers:
+    description: Allows placing snow layers on top of each other.
+    default: true
+
+  SnapPlace.betterplacements.*:
+    description: Gives access to all BetterPlacements features.
+    default: true
+    children:
+      SnapPlace.betterplacements.rails: true
+      SnapPlace.betterplacements.wallandroof: true
+      SnapPlace.betterplacements.interactables: true
+
+  SnapPlace.betterplacements.rails:
+    description: Allows orienting rails based on player direction.
+    default: true
+  SnapPlace.betterplacements.wallandroof:
+    description: Allows placing fences, pumpkins, and jack-o'-lanterns on walls and roofs.
+    default: true
+  SnapPlace.betterplacements.interactables:
+    description: Allows placing blocks on interactable blocks like workbenches  and chests.
+    default: true
+
+  SnapPlace.betterslabs:
+    description: Allows improved slab placement, including placing slabs between others and preventing unwanted merging.
+    default: true
+
+
+
+
+
+
+
