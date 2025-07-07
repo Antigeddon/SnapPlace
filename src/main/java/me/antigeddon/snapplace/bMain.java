@@ -47,12 +47,7 @@ public class bMain extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        log("[SnapPlace] 1.0 is asleep ~ZZZzzzz...");
-    }
-
-
-    public void log(String message) {
-//        System.out.println("[BetterSlabs] " + message);
+        getServer().getLogger().info("[SnapPlace] 1.0 is asleep ~ZZZzzzz...");
     }
 
     public static bConfig getPluginConfig() {
