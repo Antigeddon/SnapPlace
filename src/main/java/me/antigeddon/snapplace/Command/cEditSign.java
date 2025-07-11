@@ -108,7 +108,7 @@ public class cEditSign implements Listener, CommandExecutor {
                 }
 
                 if (content.length() > 15) {
-                    content = content.substring(0, 15);;
+                    content = content.substring(0, 15);
                 }
 
                 lines[lineNum] = content;
@@ -188,13 +188,10 @@ public class cEditSign implements Listener, CommandExecutor {
             lines[i] = sign.getLine(i);
         }
 
-        boolean foundAtLeastOnePrefix = false;
-
         for (String arg : args) {
             String lower = arg.toLowerCase();
 
             if (lower.matches("l[1-4]:\\(.+\\)")) {
-                foundAtLeastOnePrefix = true;
 
                 int lineNum = lower.charAt(1) - '1';
                 String content = arg.substring(arg.indexOf('(') + 1, arg.lastIndexOf(')'));
@@ -205,7 +202,6 @@ public class cEditSign implements Listener, CommandExecutor {
                 lines[lineNum] = content;
 
             } else if (lower.matches("l[1-4]:.*")) {
-                foundAtLeastOnePrefix = true;
 
                 int lineNum = lower.charAt(1) - '1';
                 String content = arg.substring(3);

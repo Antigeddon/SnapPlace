@@ -16,11 +16,8 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import java.util.*;
 
 public class slAntiMerge implements Listener {
-
-    private static final Set<String> processing = new HashSet<>();
 
     @EventHandler
     public void onSlabPlace(PlayerInteractEvent event) {

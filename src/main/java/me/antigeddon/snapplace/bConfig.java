@@ -60,24 +60,6 @@ public final class bConfig extends Configuration {
         }
     }
 
-    public void loadAndLog() {
-        try {
-            this.load();
-            logger.info("[SnapPlace] Configuration '" + configFile.getName() + "' loaded successfully.");
-        } catch (Exception e) {
-            logger.severe("[SnapPlace] Failed to load configuration '" + configFile.getName() + "': " + e.getMessage());
-        }
-    }
-
-    public void saveAndLog() {
-        try {
-            this.save();
-            logger.info("[SnapPlace] Configuration '" + configFile.getName() + "' saved successfully.");
-        } catch (Exception e) {
-            logger.severe("[SnapPlace] Failed to save configuration '" + configFile.getName() + "': " + e.getMessage());
-        }
-    }
-
     public Map<String, Object> getAll() {
         Map<String, Object> allConfig = new HashMap<>();
         List<String> keys = this.getKeys();

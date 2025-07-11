@@ -84,13 +84,13 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         Material placedBlock;
-        byte data = 0;
+        byte data;
 
         if (itemType == Material.SIGN) {
             placedBlock = (face == BlockFace.UP) ? Material.SIGN_POST : Material.WALL_SIGN;
 
         } else {
-            placedBlock = convertItemToBlock(itemType, face);
+            placedBlock = convertItemToBlock(itemType);
         }
 
         if (bBlockType.isFragileInteractableButSigns(type)) {
@@ -675,7 +675,7 @@ public class bPlaceOnInteractable implements Listener {
         }
     }
 
-    private Material convertItemToBlock(Material itemType, BlockFace face) {
+    private Material convertItemToBlock(Material itemType) {
         switch (itemType) {
             case REDSTONE: return Material.REDSTONE_WIRE;
             case DIODE: return Material.DIODE_BLOCK_OFF;

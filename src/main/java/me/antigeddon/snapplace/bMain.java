@@ -13,20 +13,18 @@ import static org.bukkit.Bukkit.getLogger;
 
 public class bMain extends JavaPlugin implements Listener {
 
-    private static bMain instance;
     public static bConfig config;
 
     @Override
     public void onEnable() {
-        instance = this;
         getServer().getLogger().info("[SnapPlace] 1.0 initialized");
         config = new bConfig(this, "config.yml");
         config.load();
         config.printAllConfig(getLogger());
 
-        cEditSign cEditSignInstance = new cEditSign(this);
-        this.getCommand("editsign").setExecutor(cEditSignInstance);
-        getServer().getPluginManager().registerEvents(cEditSignInstance, this);
+        cEditSign signCommand = new cEditSign(this);
+        getCommand("editsign").setExecutor(signCommand);
+        getServer().getPluginManager().registerEvents(signCommand, this);
         getServer().getPluginManager().registerEvents(new slPlaceBetween(), this);
         getServer().getPluginManager().registerEvents(new slAntiMerge(), this);
         getServer().getPluginManager().registerEvents(new bPlaceOnInteractable(), this);
@@ -42,10 +40,6 @@ public class bMain extends JavaPlugin implements Listener {
 
     public static bConfig getPluginConfig() {
         return config;
-    }
-
-    public static bMain getInstance() {
-        return instance;
     }
 
     public String pName() {

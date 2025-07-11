@@ -473,7 +473,6 @@ public class bBlockType {
         }
 
         double minX = x;
-        double minY = y;
         double minZ = z;
         double maxX = x + 1;
         double maxY = y + 1;
@@ -553,7 +552,7 @@ public class bBlockType {
                 break;
         }
 
-        AxisAlignedBB blockBB = AxisAlignedBB.a(minX, minY, minZ, maxX, maxY, maxZ);
+        AxisAlignedBB blockBB = AxisAlignedBB.a(minX, y, minZ, maxX, maxY, maxZ);
 
         for (org.bukkit.entity.Entity bukkitEntity : player.getNearbyEntities(6, 6, 6)) {
             if (bukkitEntity instanceof Item
