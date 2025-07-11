@@ -16,7 +16,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-
 import java.util.*;
 
 public class slAntiMerge implements Listener {
@@ -48,11 +47,11 @@ public class slAntiMerge implements Listener {
             return;
 
         Material itemType = event.getItem().getType();
+
         if (itemType != Material.STEP && itemType != Material.DOUBLE_STEP)
             return;
 
         ItemStack inHand = event.getItem();
-
         Block clickedBlock = event.getClickedBlock();
 
         if (clickedBlock == null)
@@ -67,14 +66,11 @@ public class slAntiMerge implements Listener {
                 return;
         }
 
-        if (clickedBlock.getType() == Material.SNOW) {
-            return;
-        }
-
-        if (event.getBlockFace() == BlockFace.UP && itemType == Material.STEP) {
+        if (clickedBlock.getType() == Material.SNOW)
             return;
 
-        }
+        if (event.getBlockFace() == BlockFace.UP && itemType == Material.STEP)
+            return;
 
         BlockFace face = event.getBlockFace();
         Block target = clickedBlock.getRelative(face);
@@ -86,11 +82,9 @@ public class slAntiMerge implements Listener {
         byte handData = inHand.getData().getData();
         byte belowData = below.getData();
 
-        if (belowData != handData) {
-            if (!(belowData == 0 && itemType == Material.DOUBLE_STEP)) {
+        if (belowData != handData)
+            if (!(belowData == 0 && itemType == Material.DOUBLE_STEP))
                 return;
-            }
-        }
 
         Block above = below.getRelative(BlockFace.UP);
         Material aboveType = above.getType();
@@ -114,16 +108,17 @@ public class slAntiMerge implements Listener {
 
             slPillarFix.checkAndStoreStepLoop(player, below);
 
-
             below.setType(Material.AIR);
 
             if (itemType == Material.DOUBLE_STEP) {
-                above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true); //ici
+                above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true);
+
             } else {
                 above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(44, handData, true);
             }
 
             slPillarFix.restoreBlocks1(player);
+
             target.getWorld().getBlockAt(target.getX(), target.getY() - 1, target.getZ()).setTypeIdAndData(44, belowData, true);
 
             slPillarFix.restoreBlocks2(player);
@@ -132,7 +127,6 @@ public class slAntiMerge implements Listener {
                 p.sendBlockChange(above.getLocation(), itemType, handData);
                 p.sendBlockChange(target.getLocation(), itemType, handData);
                 p.sendBlockChange(below.getLocation(), itemType, belowData);
-
             }
 
             BlockState targetBlockState = target.getState();
@@ -149,7 +143,6 @@ public class slAntiMerge implements Listener {
                 player.sendBlockChange(below.getLocation(), 44, belowData);
                 return;
             }
-
             bPlaceOnInteractable.removeOneItemFromHand(player);
     }
 
@@ -166,7 +159,6 @@ public class slAntiMerge implements Listener {
                 !player.hasPermission("SnapPlace.betterslabs"))
             return;
 
-
         Block block = event.getBlock();
         int typeId = block.getTypeId();
         byte data = block.getData();
@@ -175,6 +167,7 @@ public class slAntiMerge implements Listener {
             return;
 
         Block below = block.getRelative(0, -1, 0);
+
         if (below.getType() != Material.STEP)
             return;
 
@@ -186,5 +179,3 @@ public class slAntiMerge implements Listener {
         }
     }
 }
-
-

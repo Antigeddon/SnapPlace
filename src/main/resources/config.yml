@@ -48,8 +48,14 @@ better-slabs:
 
     place-between:
         enable: true
-        # If "true", allows placing slabs between existing slabs (middle placement). Default: true
+        # If "true", allows placing slabs between existing slabs (middle placement). (Default: true)
         # (May impact performance if used maliciously. It scans below the target block to ensure slab separation.) (Default: true)
         need-sneaking: true
         # If "true", players must sneak to place slabs between others. (Default: true)
 
+
+edit-sign:
+    enable: true
+    # If "true", players will be able to edit signs using the /editsign command. (Default: true)
+    command-timeout: 40
+    # Time in seconds before the sign edit request expires. (Default: 40)

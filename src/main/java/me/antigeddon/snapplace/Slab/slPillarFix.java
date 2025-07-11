@@ -31,6 +31,7 @@ public class slPillarFix {
                 types.add(below.getType());
                 data.add(below.getData());
                 current = below;
+
             } else {
                 break;
             }
@@ -44,7 +45,10 @@ public class slPillarFix {
     public static void restoreBlocks1(Player player) {
         UUID playerId = player.getUniqueId();
         List<Block> affected = playerAffectedBlocks.get(playerId);
-        if (affected == null) return;
+
+        if (affected == null)
+            return;
+
         for (Block b : affected) {
             b.setType(Material.AIR);
             player.sendBlockChange(b.getLocation(), Material.AIR, (byte) 0);
@@ -56,7 +60,9 @@ public class slPillarFix {
         List<Block> affected = playerAffectedBlocks.get(playerId);
         List<Material> types = playerOriginalTypes.get(playerId);
         List<Byte> data      = playerOriginalData.get(playerId);
-        if (affected == null || types == null || data == null) return;
+
+        if (affected == null || types == null || data == null)
+            return;
 
         for (int i = 0; i < affected.size(); i++) {
             Block b        = affected.get(i);
@@ -73,5 +79,4 @@ public class slPillarFix {
         playerOriginalTypes .remove(playerId);
         playerOriginalData  .remove(playerId);
     }
-
 }

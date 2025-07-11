@@ -15,12 +15,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
-
 public class bPlace implements Listener {
-
-
-    public bPlace(bMain plugin) {
-    }
 
     @EventHandler
     public void onSneakPlace(PlayerInteractEvent event) {
@@ -29,17 +24,18 @@ public class bPlace implements Listener {
         boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.need-sneaking", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
+            return;
 
         Player player = event.getPlayer();
         ItemStack inHand = player.getItemInHand();
 
-        if (inHand == null) return;
+        if (inHand == null)
+            return;
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterplacements.wallandroof")) {
+                !player.hasPermission("SnapPlace.betterplacements.wallandroof"))
             return;
-        }
 
         Material itemType = inHand.getType();
 
@@ -57,10 +53,9 @@ public class bPlace implements Listener {
         if (clickedBlock == null)
             return;
 
-        if (bBlockType.isClickable(clickedBlock.getType())) {
+        if (bBlockType.isClickable(clickedBlock.getType()))
             if (!player.isSneaking() || !placeOn || !player.hasPermission("SnapPlace.betterplacements.interactables"))
                 return;
-        }
 
         BlockFace face = event.getBlockFace();
         Block targetBlock = clickedBlock.getRelative(face);
@@ -151,8 +146,6 @@ public class bPlace implements Listener {
                 !player.hasPermission("SnapPlace.betterplacements.rails"))
             return;
 
-
-
         byte orientation = hasAdjacentRail(block, player.getLocation().getYaw());
 
         if (orientation != -1) {
@@ -194,5 +187,4 @@ public class bPlace implements Listener {
 
         return ((yaw >= 45 && yaw <= 135) || (yaw >= 225 && yaw <= 315)) ? (byte) 1 : (byte) 0;
     }
-
 }

@@ -18,7 +18,6 @@ import org.bukkit.material.MaterialData;
 import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.Packet18ArmAnimation;
 
-
 public class slPlaceBetween implements Listener {
 
     @EventHandler
@@ -48,10 +47,9 @@ public class slPlaceBetween implements Listener {
         if (clicked.getType() == Material.SNOW)
             return;
 
-        if (!player.isSneaking() && sneak) {
+        if (!player.isSneaking() && sneak)
             if (!(event.getBlockFace() == BlockFace.UP && bBlockType.isFluid(clicked.getRelative(BlockFace.UP).getType())))
                 return;
-        }
 
         BlockFace face = event.getBlockFace();
         Block target = clicked.getRelative(face);
@@ -63,6 +61,7 @@ public class slPlaceBetween implements Listener {
 
         if (clicked.getType() == Material.STEP && face == BlockFace.UP) {
             slab = clicked;
+
         } else if (target.getType() == Material.STEP) {
             slab = target;
         }
@@ -85,9 +84,8 @@ public class slPlaceBetween implements Listener {
         MaterialData slabdata = slab.getState().getData();
         MaterialData inHandData = inHand.getData();
 
-        if (!slabdata.getClass().equals(inHandData.getClass()) || slabdata.getData() != inHandData.getData()) {
+        if (!slabdata.getClass().equals(inHandData.getClass()) || slabdata.getData() != inHandData.getData())
             return;
-        }
 
         if (bBlockType.isEntityBlockingBlock(slab.getLocation(), player, Material.DOUBLE_STEP, inHandData.getData()))
             return;
@@ -99,9 +97,8 @@ public class slPlaceBetween implements Listener {
         slab.getWorld().getBlockAt(slab.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(43, inHandData.getData(), true);
         slPillarFix.restoreBlocks2(player);
 
-        for (Player p : player.getServer().getOnlinePlayers()) {
+        for (Player p : player.getServer().getOnlinePlayers())
             p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
-        }
 
         event.setCancelled(true);
 
@@ -114,6 +111,7 @@ public class slPlaceBetween implements Listener {
                 player,
                 true);
         org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+
         if (placeEvent.isCancelled()) {
             slPillarFix.checkAndStoreStepLoop(player, slab);
             slab.setType(Material.AIR);
@@ -128,10 +126,10 @@ public class slPlaceBetween implements Listener {
 
         Block above = slab.getRelative(BlockFace.UP);
         Material aboveType = above.getType();
-        if (!bBlockType.isFluid(aboveType) || slab == target) {
+
+        if (!bBlockType.isFluid(aboveType) || slab == target)
             if (!bBlockType.isClickable(clicked.getType()))
                 swingArm(player);
-        }
     }
 
     public static void swingArm(Player player) {

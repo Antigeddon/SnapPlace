@@ -50,10 +50,3 @@ permissions:
   SnapPlace.betterslabs:
     description: Allows improved slab placement, including placing slabs between others and preventing unwanted merging.
     default: true
-
-
-
-
-
-
-

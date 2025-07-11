@@ -16,11 +16,9 @@ import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-
 import java.util.*;
 
 public class bPlaceOnInteractable implements Listener {
-
 
     private static final Set<Material> INTERACTIVE_BLOCKS = Collections.unmodifiableSet(EnumSet.of(
             Material.WORKBENCH,
@@ -74,26 +72,23 @@ public class bPlaceOnInteractable implements Listener {
         Block underTarget = target.getRelative(BlockFace.DOWN);
         Material underType = underTarget.getType();
 
-
         if (!player.isSneaking() || itemType == Material.AIR)
             return;
 
-
         if (!INTERACTIVE_BLOCKS.contains(type))
             return;
-
 
         if (!isPlaceableItem(itemType) || itemType == Material.PISTON_EXTENSION || itemType == Material.PISTON_MOVING_PIECE) {
             event.setCancelled(true);
             return;
         }
 
-
         Material placedBlock;
         byte data = 0;
 
         if (itemType == Material.SIGN) {
             placedBlock = (face == BlockFace.UP) ? Material.SIGN_POST : Material.WALL_SIGN;
+
         } else {
             placedBlock = convertItemToBlock(itemType, face);
         }
@@ -114,6 +109,7 @@ public class bPlaceOnInteractable implements Listener {
 
         if (inHand.getData() != null && inHand.getData().getData() > 0) {
             data = inHand.getData().getData();
+
         } else {
             data = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
             if (data == -1) {
@@ -132,10 +128,12 @@ public class bPlaceOnInteractable implements Listener {
             if (bBlockType.isFluid(placedBlock)) {
                 if (placedBlock == Material.SNOW && (!sEnable && replace)) {
                     // Continue
+
                 } else {
                     event.setCancelled(true);
                     return;
                 }
+
             } else {
                 event.setCancelled(true);
                 return;
@@ -217,6 +215,7 @@ public class bPlaceOnInteractable implements Listener {
                 event.setCancelled(true);
                 return;
             }
+
         } else if (placedBlock == Material.SNOW) {
             if (!bBlockType.isGroundMushroomAndSnow(underType) && underType != Material.DOUBLE_STEP) {
                 event.setCancelled(true);
@@ -261,7 +260,6 @@ public class bPlaceOnInteractable implements Listener {
                 target.setType(Material.AIR);
                 player.setItemInHand(new ItemStack(bucketType, 1));
             }
-
             return;
         }
 
@@ -365,10 +363,12 @@ public class bPlaceOnInteractable implements Listener {
                 block.setData(data);
                 block.getState().update(true);
             }
+
         } else if (placedBlock == Material.FURNACE || placedBlock == Material.BURNING_FURNACE || placedBlock == Material.DISPENSER) {
             block.setTypeIdAndData(placedBlock.getId(), data, true);
             block.setData(data);
             block.getState().update(true);
+
         } else {
             block.setTypeIdAndData(placedBlock.getId(), data, true);
         }
@@ -402,6 +402,7 @@ public class bPlaceOnInteractable implements Listener {
                 if (bBlockType.isInteractableBlackList(clickedType)) {
                     if (face != BlockFace.UP) {
                         return 5;
+
                     } else {
                         return -1;
                     }
@@ -421,6 +422,7 @@ public class bPlaceOnInteractable implements Listener {
             case CACTUS:
                 if (face == BlockFace.UP) {
                     return -1;
+
                 } else {
                     return 0;
                 }
@@ -554,6 +556,7 @@ public class bPlaceOnInteractable implements Listener {
             byte orientation = bPlace.hasAdjacentRail(block, yaw);
             if (orientation == -1) {
                 return -2;
+
             } else {
                 return orientation;
             }
@@ -613,9 +616,8 @@ public class bPlaceOnInteractable implements Listener {
                 }
             }
 
-        if (type == Material.PISTON_BASE || type == Material.PISTON_STICKY_BASE) {
+        if (type == Material.PISTON_BASE || type == Material.PISTON_STICKY_BASE)
             return getPistonDirection(yaw, pitch);
-        }
 
         if (itemType == Material.SIGN) {
             if (type == Material.SIGN_POST) {
@@ -673,8 +675,6 @@ public class bPlaceOnInteractable implements Listener {
         }
     }
 
-
-
     private Material convertItemToBlock(Material itemType, BlockFace face) {
         switch (itemType) {
             case REDSTONE: return Material.REDSTONE_WIRE;
@@ -726,26 +726,21 @@ public class bPlaceOnInteractable implements Listener {
             }
         }
 
-        if (adjacentChests.size() >= 2) {
+        if (adjacentChests.size() >= 2)
             return true;
-        }
 
-        if (adjacentChests.isEmpty()) {
+        if (adjacentChests.isEmpty())
             return false;
-        }
 
         Block chestToCheck = adjacentChests.get(0);
 
         for (BlockFace dir : directions) {
             Block nearby = chestToCheck.getRelative(dir);
 
-            if (nearby.equals(target)) {
+            if (nearby.equals(target))
                 continue;
-            }
-
-            if (nearby.getType() == Material.CHEST) {
+            if (nearby.getType() == Material.CHEST)
                 return true;
-            }
         }
 
         return false;
@@ -774,16 +769,17 @@ public class bPlaceOnInteractable implements Listener {
                 if (amount > 1) {
                     inHand.setAmount(amount - 1);
                     inHand.setDurability((short)0);
+
                 } else {
                     player.getInventory().setItemInHand(null);
                 }
             }
         }
 
-
         int newAmount = inHand.getAmount() - 1;
         if (newAmount <= 0) {
             player.setItemInHand(null);
+
         } else {
             inHand.setAmount(newAmount);
             player.setItemInHand(inHand);
@@ -791,22 +787,17 @@ public class bPlaceOnInteractable implements Listener {
     }
 
     public static boolean spawnPainting(Location loc, byte direction) {
-        if (direction == -1) {
+
+        if (direction == -1)
             return false;
-        }
 
         WorldServer world = ((CraftWorld) loc.getWorld()).getHandle();
-
         EntityPainting painting = new EntityPainting(world, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), direction);
 
-        if (!painting.h()) {
+        if (!painting.h())
             return false;
-        }
 
         world.addEntity(painting);
         return true;
     }
-
 }
-
-

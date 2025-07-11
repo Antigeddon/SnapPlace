@@ -17,9 +17,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-
 import java.util.*;
-
 
 public class cEditSign implements Listener, CommandExecutor {
 
@@ -33,12 +31,21 @@ public class cEditSign implements Listener, CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        boolean enabled = bMain.getPluginConfig().getBoolean("edit-sign.enable", true);
+        int timeoutSeconds = bMain.getPluginConfig().getInt("edit-sign.command-timeout", 40);
+
         if (!(sender instanceof Player)) {
-            sender.sendMessage("[SnapPlace] Only players can use this command.");
+            sender.sendMessage("[SnapPlace] This command can only be used by players.");
             return true;
         }
 
         Player player = (Player) sender;
+
+        if (!enabled) {
+            player.sendMessage(plugin.pName() + "§cSign editing is disabled.");
+            return true;
+        }
+
         if (!player.isOp() &&
                 !player.hasPermission("SnapPlace.editsign")) {
             player.sendMessage(plugin.pName() + "§cYou don't have permission to do that.");
@@ -60,9 +67,11 @@ public class cEditSign implements Listener, CommandExecutor {
                     buffer.setLength(0);
                     buffer.append(a);
                     inParens = true;
+
                 } else {
                     rebuilt.add(a);
                 }
+
             } else {
                 buffer.append(" ").append(a);
                 if (a.contains(")")) {
@@ -79,17 +88,21 @@ public class cEditSign implements Listener, CommandExecutor {
 
         boolean hasPrefix = false;
         String[] lines = new String[4];
+
         for (int i = 0; i < 4; i++) lines[i] = "";
 
         for (String a : rebuilt) {
             String low = a.toLowerCase();
+
             if (low.matches("l[1-4]:.*")) {
                 hasPrefix = true;
                 int lineNum = a.charAt(1) - '1';
 
                 String content;
+
                 if (low.matches("l[1-4]:\\(.+\\)")) {
                     content = a.substring(a.indexOf('(') + 1, a.lastIndexOf(')'));
+
                 } else {
                     content = a.substring(3);
                 }
@@ -97,6 +110,7 @@ public class cEditSign implements Listener, CommandExecutor {
                 if (content.length() > 15) {
                     content = content.substring(0, 15);;
                 }
+
                 lines[lineNum] = content;
             }
         }
@@ -106,7 +120,7 @@ public class cEditSign implements Listener, CommandExecutor {
             return true;
         }
 
-        player.sendMessage(plugin.pName() + "§eYou are about to modify a sign with the following content:");
+        player.sendMessage(plugin.pName() + "§eYou’re about to modify a sign with this content:");
         for (int i = 0; i < 4; i++) {
             String lineContent = lines[i];
             if (lineContent == null || lineContent.isEmpty()) {
@@ -124,10 +138,11 @@ public class cEditSign implements Listener, CommandExecutor {
 
         int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             if (pendingSignEdits.containsKey(player.getUniqueId())) {
+                player.sendMessage(plugin.pName() + "§cSign edit request has expired.");
                 pendingSignEdits.remove(player.getUniqueId());
                 pendingTasks.remove(player.getUniqueId());
             }
-        }, 40 * 20L);
+        }, timeoutSeconds * 20L);
 
         pendingTasks.put(player.getUniqueId(), taskId);
         return true;
@@ -138,17 +153,21 @@ public class cEditSign implements Listener, CommandExecutor {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        if (!pendingSignEdits.containsKey(uuid)) return;
+        if (!pendingSignEdits.containsKey(uuid))
+            return;
 
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK)
+            return;
 
         Block block = event.getClickedBlock();
-        if (block == null) return;
+
+        if (block == null)
+            return;
 
         Material type = block.getType();
-        if (!(type == Material.SIGN_POST || type == Material.WALL_SIGN)) {
+
+        if (!(type == Material.SIGN_POST || type == Material.WALL_SIGN))
             return;
-        }
 
         event.setCancelled(true);
 

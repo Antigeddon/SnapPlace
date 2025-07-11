@@ -17,9 +17,6 @@ import org.bukkit.inventory.ItemStack;
 
 public class sSnow implements Listener {
 
-    public sSnow(bMain plugin) {
-    }
-
     @EventHandler
     public void onSnowLayerInteract(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
@@ -38,28 +35,24 @@ public class sSnow implements Listener {
 
         Material type = clicked.getType();
         byte data = clicked.getData();
-
         Block adjacent = clicked.getRelative(event.getBlockFace());
 
         if (inHand == null || inHand.getType() != Material.SNOW)
             return;
-
 
         if (adjacent.getType() == Material.SNOW || type == Material.SNOW) {
             if (!enable) {
                 if (replace) {
                     return;
                 }
-
                 event.setCancelled(true);
                 return;
             }
             event.setCancelled(true);
         }
 
-        if (type != Material.SNOW) {
+        if (type != Material.SNOW)
             return;
-        }
 
         if (!player.isSneaking() && sneak) {
             event.setCancelled(true);
@@ -71,7 +64,6 @@ public class sSnow implements Listener {
             event.setCancelled(true);
             return;
         }
-
 
         if (event.getBlockFace() != BlockFace.UP) {
             event.setCancelled(true);
@@ -95,13 +87,15 @@ public class sSnow implements Listener {
         event.setCancelled(true);
 
         byte newData = (byte) (clicked.getData() + 1);
+
         clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(Material.SNOW.getId(), newData, true);
-        for (Player p : Bukkit.getOnlinePlayers()) {
+
+        for (Player p : Bukkit.getOnlinePlayers())
             p.sendBlockChange(clicked.getLocation(), Material.SNOW, newData);
-        }
 
         BlockPlaceEvent placeEvent = new BlockPlaceEvent(clicked, clicked.getState(), clicked.getRelative(BlockFace.SELF), inHand, player, true);
         Bukkit.getServer().getPluginManager().callEvent(placeEvent);
+
         if (placeEvent.isCancelled()) {
             clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(type.getId(), data, false);
             event.setCancelled(true);
@@ -110,6 +104,7 @@ public class sSnow implements Listener {
 
         BlockBreakEvent breakEvent = new BlockBreakEvent(clicked, player);
         Bukkit.getServer().getPluginManager().callEvent(breakEvent);
+
         if (breakEvent.isCancelled()) {
             clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(type.getId(), data, false);
             event.setCancelled(true);

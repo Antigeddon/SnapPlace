@@ -543,6 +543,7 @@ public class bBlockType {
             case SNOW:
                 if ((data >= 2 && data <= 8) || (data >= 10 && data <= 15)) {
                     maxY = y + 0.5;
+
                 } else {
                     return false;
                 }
