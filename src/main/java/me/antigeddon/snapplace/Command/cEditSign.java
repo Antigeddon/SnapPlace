@@ -120,7 +120,7 @@ public class cEditSign implements Listener, CommandExecutor {
             return true;
         }
 
-        player.sendMessage(plugin.pName() + "§eYou’re about to modify a sign with this content:");
+        player.sendMessage(plugin.pName() + "§eYou're about to modify a sign with this content:");
         for (int i = 0; i < 4; i++) {
             String lineContent = lines[i];
             if (lineContent == null || lineContent.isEmpty()) {

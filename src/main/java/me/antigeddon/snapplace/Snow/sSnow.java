@@ -10,7 +10,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -71,14 +70,14 @@ public class sSnow implements Listener {
         }
 
         // Max Height
-        if (clicked.getData() == 7 || clicked.getData() == 15) {
+        if (data == 7 || data == 15) {
             event.setCancelled(true);
             return;
         }
 
         // HitBox
-        if (clicked.getData() == 2 || (clicked.getData() == 10)) {
-            if (bBlockType.isEntityBlockingBlock(clicked.getLocation(), player, Material.SNOW, clicked.getData())) {
+        if (data == 2 || (data == 10)) {
+            if (bBlockType.isEntityBlockingBlock(clicked.getLocation(), player, Material.SNOW, data)) {
                 event.setCancelled(true);
                 return;
             }
@@ -86,26 +85,17 @@ public class sSnow implements Listener {
 
         event.setCancelled(true);
 
-        byte newData = (byte) (clicked.getData() + 1);
+        byte newData = (byte) (data + 1);
 
-        clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(Material.SNOW.getId(), newData, true);
-
+        clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(78, newData, true);
         for (Player p : Bukkit.getOnlinePlayers())
             p.sendBlockChange(clicked.getLocation(), Material.SNOW, newData);
 
         BlockPlaceEvent placeEvent = new BlockPlaceEvent(clicked, clicked.getState(), clicked.getRelative(BlockFace.SELF), inHand, player, true);
+
         Bukkit.getServer().getPluginManager().callEvent(placeEvent);
 
         if (placeEvent.isCancelled()) {
-            clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(type.getId(), data, false);
-            event.setCancelled(true);
-            return;
-        }
-
-        BlockBreakEvent breakEvent = new BlockBreakEvent(clicked, player);
-        Bukkit.getServer().getPluginManager().callEvent(breakEvent);
-
-        if (breakEvent.isCancelled()) {
             clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(type.getId(), data, false);
             event.setCancelled(true);
             return;

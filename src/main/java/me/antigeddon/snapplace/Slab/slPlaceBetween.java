@@ -54,7 +54,6 @@ public class slPlaceBetween implements Listener {
         BlockFace face = event.getBlockFace();
         Block target = clicked.getRelative(face);
         Material targetType = target.getType();
-        byte targetData = target.getData();
         ItemStack inHand = player.getItemInHand();
 
         Block slab = null;
@@ -62,7 +61,7 @@ public class slPlaceBetween implements Listener {
         if (clicked.getType() == Material.STEP && face == BlockFace.UP) {
             slab = clicked;
 
-        } else if (target.getType() == Material.STEP) {
+        } else if (targetType == Material.STEP) {
             slab = target;
         }
 
@@ -90,16 +89,6 @@ public class slPlaceBetween implements Listener {
         if (bBlockType.isEntityBlockingBlock(slab.getLocation(), player, Material.DOUBLE_STEP, inHandData.getData()))
             return;
 
-        slPillarFix.checkAndStoreStepLoop(player, slab);
-
-        slab.setType(Material.AIR);
-        slPillarFix.restoreBlocks1(player);
-        slab.getWorld().getBlockAt(slab.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(43, inHandData.getData(), true);
-        slPillarFix.restoreBlocks2(player);
-
-        for (Player p : player.getServer().getOnlinePlayers())
-            p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
-
         event.setCancelled(true);
 
         BlockState slabBlockState = slab.getState();
@@ -110,13 +99,23 @@ public class slPlaceBetween implements Listener {
                 inHand,
                 player,
                 true);
+
+        slPillarFix.checkAndStoreStepLoop(player, slab);
+
+        slab.setType(Material.AIR);
+        slPillarFix.restoreBlocks1(player);
+        slab.getWorld().getBlockAt(slab.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(43, inHandData.getData(), true);
+        slPillarFix.restoreBlocks2(player);
+
+        for (Player p : player.getServer().getOnlinePlayers())
+            p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
         org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
 
         if (placeEvent.isCancelled()) {
             slPillarFix.checkAndStoreStepLoop(player, slab);
             slab.setType(Material.AIR);
             slPillarFix.restoreBlocks1(player);
-            slab.getWorld().getBlockAt(target.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(targetType.getId(), targetData, false);
+            slab.getWorld().getBlockAt(target.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(44, inHandData.getData(), false);
             player.sendBlockChange(slab.getLocation(), 44, inHandData.getData());
             slPillarFix.restoreBlocks2(player);
             return;

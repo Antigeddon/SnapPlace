@@ -103,12 +103,21 @@ public class slAntiMerge implements Listener {
 
             event.setCancelled(true);
 
+            BlockState targetBlockState = target.getState();
+            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                    target,
+                    targetBlockState,
+                    clickedBlock,
+                    inHand,
+                    player,
+                    true);
+
             slPillarFix.checkAndStoreStepLoop(player, below);
 
             below.setType(Material.AIR);
 
             if (itemType == Material.DOUBLE_STEP) {
-                above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true);
+            above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true);
 
             } else {
                 above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(44, handData, true);
@@ -126,20 +135,13 @@ public class slAntiMerge implements Listener {
                 p.sendBlockChange(below.getLocation(), itemType, belowData);
             }
 
-            BlockState targetBlockState = target.getState();
-            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
-                    target,
-                    targetBlockState,
-                    clickedBlock,
-                    inHand,
-                    player,
-                    true);
             org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
             if (placeEvent.isCancelled()) {
                 above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(aboveType.getId(), aboveData, false);
                 player.sendBlockChange(below.getLocation(), 44, belowData);
                 return;
             }
+
             bPlaceOnInteractable.removeOneItemFromHand(player);
     }
 

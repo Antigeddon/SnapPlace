@@ -2,6 +2,7 @@ package me.antigeddon.snapplace.Place;
 
 import me.antigeddon.snapplace.bMain;
 import net.minecraft.server.*;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -12,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -126,15 +128,24 @@ public class bPlaceOnInteractable implements Listener {
 
         if (target.getType() == placedBlock) {
             if (bBlockType.isFluid(placedBlock)) {
-                if (placedBlock == Material.SNOW && (!sEnable && replace)) {
-                    // Continue
+                byte targetFluidData = target.getData();
 
-                } else {
+                if (targetFluidData == data) {
                     event.setCancelled(true);
                     return;
                 }
 
-            } else {
+                if (placedBlock == Material.SNOW) {
+                    if (!sEnable && replace) {
+                        // Continue
+
+                    } else {
+                        event.setCancelled(true);
+                        return;
+                    }
+                }
+
+            } else if (target.getData() == data) {
                 event.setCancelled(true);
                 return;
             }
@@ -239,6 +250,7 @@ public class bPlaceOnInteractable implements Listener {
 
         if (itemType == Material.BUCKET) {
             if (bBlockType.isFluid(targetType) && targetType != Material.SNOW && targetType != Material.AIR && targetType != Material.FIRE && target.getData() == 0) {
+
                 Material bucketType = (targetType == Material.WATER || targetType == Material.STATIONARY_WATER)
                         ? Material.WATER_BUCKET
                         : Material.LAVA_BUCKET;
@@ -252,14 +264,18 @@ public class bPlaceOnInteractable implements Listener {
                 );
 
                 org.bukkit.Bukkit.getPluginManager().callEvent(fillEvent);
+
                 if (fillEvent.isCancelled()) {
                     event.setCancelled(true);
                     return;
                 }
+
                 event.setCancelled(true);
                 target.setType(Material.AIR);
                 player.setItemInHand(new ItemStack(bucketType, 1));
+
             }
+            event.setCancelled(true);
             return;
         }
 
@@ -281,15 +297,18 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         if (itemType == Material.BED) {
+
             if (face != BlockFace.UP) {
                 event.setCancelled(true);
                 return;
             }
 
             byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
+
             if (baseData == -1) baseData = 0;
 
             Block otherPart = null;
+
             switch (baseData) {
                 case 0: otherPart = target.getRelative(BlockFace.WEST); break;
                 case 1: otherPart = target.getRelative(BlockFace.NORTH); break;
@@ -303,29 +322,76 @@ public class bPlaceOnInteractable implements Listener {
             }
 
             Block blockBelowOtherPart = otherPart.getRelative(BlockFace.DOWN);
+
             if (bBlockType.isNotSolid(blockBelowOtherPart.getType())) {
                 event.setCancelled(true);
                 return;
             }
 
             event.setCancelled(true);
+            BlockState targetBlockState = target.getState();
+            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                    target,
+                    targetBlockState,
+                    clicked,
+                    inHand,
+                    player,
+                    true);
+
             target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
             otherPart.getWorld().getBlockAt(otherPart.getX(), otherPart.getY(), otherPart.getZ()).setTypeIdAndData(placedBlock.getId(), (byte) (baseData | 0x8), true);
+
+            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+
+            if (placeEvent.isCancelled()) {
+                target.setType(targetType);
+                target.setData(targetData);
+                otherPart.setType(targetType);
+                otherPart.setData(targetData);
+                event.setCancelled(true);
+                return;
+            }
+
             removeOneItemFromHand(player);
             return;
         }
 
         if (itemType == Material.WOOD_DOOR || itemType == Material.IRON_DOOR) {
             Block top = target.getRelative(BlockFace.UP);
+
             if (!bBlockType.isFluid(top.getType()) || (face != BlockFace.UP)) {
                 event.setCancelled(true);
                 return;
             }
+
             byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
+
             if (baseData == -1) baseData = 0;
             event.setCancelled(true);
+
+            BlockState targetBlockState = target.getState();
+            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                    target,
+                    targetBlockState,
+                    clicked,
+                    inHand,
+                    player,
+                    true);
+
             target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
             top.getWorld().getBlockAt(top.getX(), top.getY(), top.getZ()).setTypeIdAndData(placedBlock.getId(),  (byte) (baseData | 0x8), true);
+
+            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+
+            if (placeEvent.isCancelled()) {
+                target.setType(targetType);
+                target.setData(targetData);
+                top.setType(targetType);
+                top.setData(targetData);
+                event.setCancelled(true);
+                return;
+            }
+
             removeOneItemFromHand(player);
             return;
             }
@@ -355,10 +421,21 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         event.setCancelled(true);
+
         Block block = target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ());
+
+        BlockState targetBlockState = target.getState();
+        BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                target,
+                targetBlockState,
+                clicked,
+                inHand,
+                player,
+                true);
 
         if (bBlockType.isRail(placedBlock)) {
             block.setType(placedBlock);
+
             if (data != -2) {
                 block.setData(data);
                 block.getState().update(true);
@@ -373,14 +450,6 @@ public class bPlaceOnInteractable implements Listener {
             block.setTypeIdAndData(placedBlock.getId(), data, true);
         }
 
-        BlockState targetBlockState = target.getState();
-        BlockPlaceEvent placeEvent = new BlockPlaceEvent(
-                target,
-                targetBlockState,
-                clicked,
-                inHand,
-                player,
-                true);
         org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
             block.setType(targetType);
@@ -388,6 +457,14 @@ public class bPlaceOnInteractable implements Listener {
             event.setCancelled(true);
             return;
         }
+
+        if (itemType == Material.WATER_BUCKET || itemType == Material.LAVA_BUCKET) {
+            block.setType(itemType == Material.WATER_BUCKET ? Material.WATER : Material.LAVA);
+            block.setData((byte) 0);
+        }
+
+        if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)
+            triggerEmptySignEvent(block, player);
 
         removeOneItemFromHand(player);
     }
@@ -680,8 +757,8 @@ public class bPlaceOnInteractable implements Listener {
             case REDSTONE: return Material.REDSTONE_WIRE;
             case DIODE: return Material.DIODE_BLOCK_OFF;
             case CAKE: return Material.CAKE_BLOCK;
-            case WATER_BUCKET: return Material.WATER;
-            case LAVA_BUCKET: return Material.LAVA;
+            case WATER_BUCKET: return Material.STATIONARY_WATER;
+            case LAVA_BUCKET: return Material.STATIONARY_LAVA;
             case FLINT_AND_STEEL: return Material.FIRE;
             case SUGAR_CANE: return Material.SUGAR_CANE_BLOCK;
             case WOOD_DOOR: return Material.WOODEN_DOOR;
@@ -799,5 +876,18 @@ public class bPlaceOnInteractable implements Listener {
 
         world.addEntity(painting);
         return true;
+    }
+
+    public static void triggerEmptySignEvent(Block placedBlock, Player player) {
+        if (placedBlock == null || player == null)
+            return;
+
+        Material type = placedBlock.getType();
+        if (type != Material.SIGN_POST && type != Material.WALL_SIGN)
+            return;
+
+        String[] emptyLines = {"", "", "", ""};
+        SignChangeEvent signEvent = new SignChangeEvent(placedBlock, player, emptyLines.clone());
+        Bukkit.getPluginManager().callEvent(signEvent);
     }
 }

@@ -77,14 +77,6 @@ public class bPlace implements Listener {
 
         event.setCancelled(true);
 
-        targetBlock.setType(itemType);
-
-        if (itemType == Material.PUMPKIN || itemType == Material.JACK_O_LANTERN) {
-            float yaw = player.getLocation().getYaw();
-            byte direction = getPumpkinDirection(yaw);
-            targetBlock.setData(direction);
-        }
-
         BlockState replacedBlockState = targetBlock.getState();
         BlockPlaceEvent placeEvent = new BlockPlaceEvent(
                 targetBlock,
@@ -94,6 +86,14 @@ public class bPlace implements Listener {
                 player,
                 true
         );
+
+        targetBlock.setType(itemType);
+
+        if (itemType == Material.PUMPKIN || itemType == Material.JACK_O_LANTERN) {
+            float yaw = player.getLocation().getYaw();
+            byte direction = getPumpkinDirection(yaw);
+            targetBlock.setData(direction);
+        }
 
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
