@@ -463,6 +463,11 @@ public class bPlaceOnInteractable implements Listener {
             block.setData((byte) 0);
         }
 
+        org.bukkit.World bukkitWorld = block.getWorld();
+
+        if (bukkitWorld.getEnvironment() == org.bukkit.World.Environment.NETHER && itemType == Material.WATER_BUCKET)
+            block.setType(Material.AIR);
+
         if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)
             triggerEmptySignEvent(block, player);
 
