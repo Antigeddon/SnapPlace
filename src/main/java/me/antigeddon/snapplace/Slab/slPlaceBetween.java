@@ -8,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -20,13 +21,16 @@ import net.minecraft.server.Packet18ArmAnimation;
 
 public class slPlaceBetween implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSlabRightClick(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
         boolean between = bMain.getPluginConfig().getBoolean("better-slabs.place-between.enable", true);
         boolean sneak = bMain.getPluginConfig().getBoolean("better-slabs.place-between.need-sneaking", true);
         boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+
+        if (event.isCancelled())
+            return;
 
         Player player = event.getPlayer();
         Block clicked = event.getClickedBlock();

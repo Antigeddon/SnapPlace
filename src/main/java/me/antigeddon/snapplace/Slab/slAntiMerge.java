@@ -9,6 +9,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -19,7 +20,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class slAntiMerge implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSlabPlace(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
         boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
@@ -87,62 +88,62 @@ public class slAntiMerge implements Listener {
         Material aboveType = above.getType();
         byte aboveData = above.getData();
 
-            if (!bBlockType.isFluid(aboveType)) {
-                return;
-            }
+        if (!bBlockType.isFluid(aboveType)) {
+            return;
+        }
 
-            if (event.getClickedBlock().getRelative(BlockFace.UP).equals(below)) {
-                event.setCancelled(true);
-                return;
-            }
-
-            if (bBlockType.isEntityBlockingBlock(above.getLocation(), player, above.getType(), handData)) {
-                event.setCancelled(true);
-                return;
-            }
-
+        if (event.getClickedBlock().getRelative(BlockFace.UP).equals(below)) {
             event.setCancelled(true);
+            return;
+        }
 
-            BlockState targetBlockState = target.getState();
-            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
-                    target,
-                    targetBlockState,
-                    clickedBlock,
-                    inHand,
-                    player,
-                    true);
+        if (bBlockType.isEntityBlockingBlock(above.getLocation(), player, above.getType(), handData)) {
+            event.setCancelled(true);
+            return;
+        }
 
-            slPillarFix.checkAndStoreStepLoop(player, below);
+        event.setCancelled(true);
 
-            below.setType(Material.AIR);
+        BlockState targetBlockState = target.getState();
+        BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                target,
+                targetBlockState,
+                clickedBlock,
+                inHand,
+                player,
+                true);
 
-            if (itemType == Material.DOUBLE_STEP) {
+        slPillarFix.checkAndStoreStepLoop(player, below);
+
+        below.setType(Material.AIR);
+
+        if (itemType == Material.DOUBLE_STEP) {
             above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true);
 
-            } else {
-                above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(44, handData, true);
-            }
+        } else {
+            above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(44, handData, true);
+        }
 
-            slPillarFix.restoreBlocks1(player);
+        slPillarFix.restoreBlocks1(player);
 
-            target.getWorld().getBlockAt(target.getX(), target.getY() - 1, target.getZ()).setTypeIdAndData(44, belowData, true);
+        target.getWorld().getBlockAt(target.getX(), target.getY() - 1, target.getZ()).setTypeIdAndData(44, belowData, true);
 
-            slPillarFix.restoreBlocks2(player);
+        slPillarFix.restoreBlocks2(player);
 
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                p.sendBlockChange(above.getLocation(), itemType, handData);
-                p.sendBlockChange(target.getLocation(), itemType, handData);
-                p.sendBlockChange(below.getLocation(), itemType, belowData);
-            }
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.sendBlockChange(above.getLocation(), itemType, handData);
+            p.sendBlockChange(target.getLocation(), itemType, handData);
+            p.sendBlockChange(below.getLocation(), itemType, belowData);
+        }
 
-            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-            if (placeEvent.isCancelled()) {
-                above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(aboveType.getId(), aboveData, false);
-                player.sendBlockChange(below.getLocation(), 44, belowData);
-                return;
-            }
+        org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+        if (placeEvent.isCancelled()) {
+            above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(aboveType.getId(), aboveData, false);
+            player.sendBlockChange(below.getLocation(), 44, belowData);
+            return;
+        }
 
-            bPlaceOnInteractable.removeOneItemFromHand(player);
+        bPlaceOnInteractable.removeOneItemFromHand(player);
     }
 
     @EventHandler

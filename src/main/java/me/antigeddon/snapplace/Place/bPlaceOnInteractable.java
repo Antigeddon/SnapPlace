@@ -10,6 +10,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -40,13 +41,16 @@ public class bPlaceOnInteractable implements Listener {
             Material.TRAP_DOOR
     ));
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSneakInteract(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
         boolean slEnable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
         boolean sEnable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
         boolean replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
+
+        if (event.isCancelled())
+            return;
 
         if (!event.getAction().toString().contains("RIGHT_CLICK"))
             return;
@@ -241,7 +245,13 @@ public class bPlaceOnInteractable implements Listener {
             }
         }
 
-        if (bBlockType.isFragileNeedGroundWhenWallPlaced(placedBlock, data)) {
+        if (bBlockType.isTorches(placedBlock)) {
+            if (bBlockType.isNotSolid(underType) && underType != Material.FENCE) {
+                event.setCancelled(true);
+                return;
+            }
+
+        } else if (bBlockType.isFragileNeedGroundWhenWallPlaced(placedBlock, data)) {
             if (bBlockType.isNotSolid(underType)) {
                 event.setCancelled(true);
                 return;

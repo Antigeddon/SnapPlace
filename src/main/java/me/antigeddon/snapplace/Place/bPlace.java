@@ -8,6 +8,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.*;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -17,12 +18,15 @@ import org.bukkit.inventory.ItemStack;
 
 public class bPlace implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSneakPlace(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
         boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.need-sneaking", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+
+        if (event.isCancelled())
+            return;
 
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
@@ -121,11 +125,14 @@ public class bPlace implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onRailPlace(BlockPlaceEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable", true);
         boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.need-sneaking", false);
+
+        if (event.isCancelled())
+            return;
 
         if (!enable || !rail)
             return;

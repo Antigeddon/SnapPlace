@@ -17,7 +17,7 @@ public class bMain extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
-        getServer().getLogger().info("[SnapPlace] 1.0 initialized");
+        getServer().getLogger().info("[SnapPlace] 1.0.2 initialized");
         config = new bConfig(this, "config.yml");
         config.load();
         config.printAllConfig(getLogger());
@@ -35,7 +35,7 @@ public class bMain extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        getServer().getLogger().info("[SnapPlace] 1.0 is asleep ~ZZZzzzz...");
+        getServer().getLogger().info("[SnapPlace] 1.0.2 is asleep ~ZZZzzzz...");
     }
 
     public static bConfig getPluginConfig() {

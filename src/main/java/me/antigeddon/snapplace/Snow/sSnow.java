@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -16,11 +17,14 @@ import org.bukkit.inventory.ItemStack;
 
 public class sSnow implements Listener {
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSnowLayerInteract(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
         boolean replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
         boolean sneak = bMain.getPluginConfig().getBoolean("snow-layers.need-sneaking", false);
+
+        if (event.isCancelled())
+            return;
 
         if (!event.getAction().toString().contains("RIGHT_CLICK"))
             return;

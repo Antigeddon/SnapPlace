@@ -62,6 +62,17 @@ public class bBlockType {
         }
     }
 
+    public static boolean isTorches(Material material) {
+        switch (material) {
+            case TORCH:
+            case REDSTONE_TORCH_OFF:
+            case REDSTONE_TORCH_ON:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static boolean isFragileInteractableButSigns(Material material) {
         switch (material) {
             case WOODEN_DOOR:
