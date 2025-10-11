@@ -2,6 +2,7 @@ package me.antigeddon.snapplace.Slab;
 
 import me.antigeddon.snapplace.Place.bPlaceOnInteractable;
 import me.antigeddon.snapplace.Place.bBlockType;
+import me.antigeddon.snapplace.bDebug;
 import me.antigeddon.snapplace.bMain;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -26,79 +27,108 @@ public class slAntiMerge implements Listener {
         boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
-        if (event.isCancelled())
+        if (event.isCancelled()) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_MERGING_EVENT_CANCELLED, "Event was already cancelled.");
             return;
+        }
 
         Player player = event.getPlayer();
 
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_WRONG_ACTION, "Action = " + event.getAction());
             return;
+        }
 
-        if (event.getItem() == null)
+        if (event.getItem() == null) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_ITEM, "");
             return;
+        }
 
-        if (!enable)
+        if (!enable) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_DISABLED, "");
             return;
+        }
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterslabs"))
+                !player.hasPermission("SnapPlace.betterslabs")) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_PERMISSION, "");
             return;
+        }
 
         Material itemType = event.getItem().getType();
 
-        if (itemType != Material.STEP && itemType != Material.DOUBLE_STEP)
+        if (itemType != Material.STEP && itemType != Material.DOUBLE_STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NOT_SLAB, "ItemType = " + itemType);
             return;
+        }
 
         ItemStack inHand = event.getItem();
         Block clickedBlock = event.getClickedBlock();
 
-        if (clickedBlock == null)
+        if (clickedBlock == null) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_CLICKED_NULL, "");
             return;
-
-        if (bBlockType.isClickable(clickedBlock.getType())) {
-            if (!player.isSneaking() || !bEnable || !placeOn)
-                return;
-
-            if (!player.isOp() &&
-                    !player.hasPermission("SnapPlace.betterplacements.interactables"))
-                return;
         }
 
-        if (clickedBlock.getType() == Material.SNOW)
-            return;
+        if (bBlockType.isClickable(clickedBlock.getType())) {
+            if (!player.isSneaking() || !bEnable || !placeOn) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_CLICKED_INTERACTABLE_NO_SNEAK, "Sneaking = " + player.isSneaking() + ", bEnable = " + bEnable + ", placeOn = " + placeOn);
+                return;
+            }
 
-        if (event.getBlockFace() == BlockFace.UP && itemType == Material.STEP)
+            if (!player.isOp() &&
+                    !player.hasPermission("SnapPlace.betterplacements.interactables")) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_PERMISSION_INTERACT, "");
+                return;
+            }
+        }
+
+        if (clickedBlock.getType() == Material.SNOW) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_CLICKED_SNOW, "");
             return;
+        }
+
+        if (event.getBlockFace() == BlockFace.UP && itemType == Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_FACE_UP_FOR_BETWEEN, "Face = " + event.getBlockFace());
+            return;
+        }
 
         BlockFace face = event.getBlockFace();
         Block target = clickedBlock.getRelative(face);
         Block below = target.getRelative(BlockFace.DOWN);
 
-        if (below.getType() != Material.STEP)
+        if (below.getType() != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_SLAB_BELOW, "BelowBlockType = " + below.getType());
             return;
+        }
 
         byte handData = inHand.getData().getData();
         byte belowData = below.getData();
 
         if (belowData != handData)
-            if (!(belowData == 0 && itemType == Material.DOUBLE_STEP))
+            if (!(belowData == 0 && itemType == Material.DOUBLE_STEP)) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_DATA_MISMATCH, "HandData = " + handData + ", BelowBlockData = " + belowData);
                 return;
+            }
 
         Block above = below.getRelative(BlockFace.UP);
         Material aboveType = above.getType();
         byte aboveData = above.getData();
 
         if (!bBlockType.isFluid(aboveType)) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_TARGET_BLOCKED, "AboveBlockType = " + aboveType);
             return;
         }
 
         if (event.getClickedBlock().getRelative(BlockFace.UP).equals(below)) {
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_INVALID_GEOMETRY, "");
             return;
         }
 
         if (bBlockType.isEntityBlockingBlock(above.getLocation(), player, above.getType(), handData)) {
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_ENTITY_BLOCKING, "");
             return;
         }
 
@@ -140,10 +170,12 @@ public class slAntiMerge implements Listener {
         if (placeEvent.isCancelled()) {
             above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(aboveType.getId(), aboveData, false);
             player.sendBlockChange(below.getLocation(), 44, belowData);
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_PLACE_CANCELLED, "");
             return;
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
+        bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_SUCCESS, "");
     }
 
     @EventHandler
@@ -152,12 +184,16 @@ public class slAntiMerge implements Listener {
 
         Player player = event.getPlayer();
 
-        if (!enable)
+        if (!enable) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_DISABLED, "");
             return;
+        }
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterslabs"))
+                !player.hasPermission("SnapPlace.betterslabs")) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_NO_PERMISSION, "");
             return;
+        }
 
         Block block = event.getBlock();
         int typeId = block.getTypeId();
@@ -168,14 +204,19 @@ public class slAntiMerge implements Listener {
 
         Block below = block.getRelative(0, -1, 0);
 
-        if (below.getType() != Material.STEP)
+        if (below.getType() != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_NO_SLAB_BELOW, "BelowBlockType " + below.getType());
             return;
+        }
+
+        bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_EVENT, "Event = " + event.isCancelled());
 
         if (event.isCancelled()) {
             slPillarFix.checkAndStoreStepLoop(player, block);
             slPillarFix.restoreBlocks1(player);
             player.sendBlockChange(block.getLocation(), typeId, data);
             slPillarFix.restoreBlocks2(player);
+            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_CANCELLED_RESTORE, "");
         }
     }
 }

@@ -1,5 +1,6 @@
 package me.antigeddon.snapplace.Command;
 
+import me.antigeddon.snapplace.bDebug;
 import me.antigeddon.snapplace.bMain;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -216,6 +217,7 @@ public class cEditSign implements Listener, CommandExecutor {
         BlockBreakEvent breakEvent = new BlockBreakEvent(targetBlock, player);
         Bukkit.getPluginManager().callEvent(breakEvent);
         if (breakEvent.isCancelled()) {
+            bDebug.debug(player, bDebug.DebugType.SIGN_BREAK_CANCELLED, "");
             return;
         }
 
@@ -223,6 +225,7 @@ public class cEditSign implements Listener, CommandExecutor {
         BlockPlaceEvent placeEvent = new BlockPlaceEvent(targetBlock, targetBlock.getState(), targetBlock, itemInHand, player, true);
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
+            bDebug.debug(player, bDebug.DebugType.SIGN_PLACE_CANCELLED, "");
             return;
         }
 
@@ -230,6 +233,7 @@ public class cEditSign implements Listener, CommandExecutor {
         Bukkit.getPluginManager().callEvent(signEvent);
 
         if (signEvent.isCancelled()) {
+            bDebug.debug(player, bDebug.DebugType.SIGN_SIGN_EVENT_CANCELLED, "");
             return;
         }
 
@@ -242,6 +246,7 @@ public class cEditSign implements Listener, CommandExecutor {
         sign.update(true);
 
         player.sendMessage(plugin.pName() + "§aSign successfully updated.");
+        bDebug.debug(player, bDebug.DebugType.SIGN_SUCCESS, "");
     }
 
     private String colorCodeSpecial(String line) {

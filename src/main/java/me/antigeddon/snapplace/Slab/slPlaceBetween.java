@@ -2,6 +2,7 @@ package me.antigeddon.snapplace.Slab;
 
 import me.antigeddon.snapplace.Place.bBlockType;
 import me.antigeddon.snapplace.Place.bPlaceOnInteractable;
+import me.antigeddon.snapplace.bDebug;
 import me.antigeddon.snapplace.bMain;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,31 +30,45 @@ public class slPlaceBetween implements Listener {
         boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
-        if (event.isCancelled())
+        if (event.isCancelled()) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_BETWEEN_EVENT_CANCELLED, "Event = " + event.getEventName());
             return;
+        }
 
         Player player = event.getPlayer();
         Block clicked = event.getClickedBlock();
 
-        if (!event.getAction().toString().contains("RIGHT_CLICK"))
+        if (!event.getAction().toString().contains("RIGHT_CLICK")) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_WRONG_ACTION, "Action = " + event.getAction());
             return;
+        }
 
-        if (!enable || !between)
+        if (!enable || !between) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_DISABLED, "Enable = " + enable + ", Between = " + between);
             return;
+        }
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterslabs"))
+                !player.hasPermission("SnapPlace.betterslabs")) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NO_PERMISSION, "");
             return;
+        }
 
-        if (clicked == null)
+        if (clicked == null) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_CLICKED_NULL, "");
             return;
+        }
 
-        if (clicked.getType() == Material.SNOW)
+        if (clicked.getType() == Material.SNOW) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_CLICKED_SNOW, "");
             return;
+        }
 
         if (!player.isSneaking() && sneak)
-            if (!(event.getBlockFace() == BlockFace.UP && bBlockType.isFluid(clicked.getRelative(BlockFace.UP).getType())))
+            if (!(event.getBlockFace() == BlockFace.UP && bBlockType.isFluid(clicked.getRelative(BlockFace.UP).getType()))) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NO_SNEAK, "");
                 return;
+            }
 
         BlockFace face = event.getBlockFace();
         Block target = clicked.getRelative(face);
@@ -69,29 +84,41 @@ public class slPlaceBetween implements Listener {
             slab = target;
         }
 
-        if (slab == null)
+        if (slab == null) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_SLAB_NULL, "");
             return;
-
-        if (bBlockType.isClickable(clicked.getType())) {
-            if (!player.isSneaking() || !bEnable || !placeOn)
-                return;
-
-            if (!player.isOp() &&
-                    !player.hasPermission("SnapPlace.betterplacements.interactables"))
-                return;
         }
 
-        if (inHand == null || inHand.getType() != Material.STEP)
+        if (bBlockType.isClickable(clicked.getType())) {
+            if (!player.isSneaking() || !bEnable || !placeOn) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_CLICKED_INTERACTABLE_NO_SNEAK, "Sneaking = " + player.isSneaking() + ", bEnable = " + bEnable + ", placeOn = " + placeOn);
+                return;
+            }
+
+            if (!player.isOp() &&
+                    !player.hasPermission("SnapPlace.betterplacements.interactables")) {
+                bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NO_PERMISSION_INTERACT, "");
+                return;
+            }
+        }
+
+        if (inHand == null || inHand.getType() != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NOT_HOLDING_SLAB, "ItemType = " + (inHand == null ? "null" : inHand.getType()));
             return;
+        }
 
         MaterialData slabdata = slab.getState().getData();
         MaterialData inHandData = inHand.getData();
 
-        if (!slabdata.getClass().equals(inHandData.getClass()) || slabdata.getData() != inHandData.getData())
+        if (!slabdata.getClass().equals(inHandData.getClass()) || slabdata.getData() != inHandData.getData()) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_DATA_MISMATCH, "HandData = " + inHandData.getData() + ", TargetSlabData = " + slabdata.getData());
             return;
+        }
 
-        if (bBlockType.isEntityBlockingBlock(slab.getLocation(), player, Material.DOUBLE_STEP, inHandData.getData()))
+        if (bBlockType.isEntityBlockingBlock(slab.getLocation(), player, Material.DOUBLE_STEP, inHandData.getData())) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_ENTITY_BLOCKING, "");
             return;
+        }
 
         event.setCancelled(true);
 
@@ -122,10 +149,12 @@ public class slPlaceBetween implements Listener {
             slab.getWorld().getBlockAt(target.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(44, inHandData.getData(), false);
             player.sendBlockChange(slab.getLocation(), 44, inHandData.getData());
             slPillarFix.restoreBlocks2(player);
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_PLACE_CANCELLED, "");
             return;
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
+        bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_SUCCESS, "SlabType = " + slab.getType() + ", SlabData = " + slab.getData());
 
         Block above = slab.getRelative(BlockFace.UP);
         Material aboveType = above.getType();

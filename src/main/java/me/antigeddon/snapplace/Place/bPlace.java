@@ -1,6 +1,7 @@
 package me.antigeddon.snapplace.Place;
 
 import me.antigeddon.snapplace.Slab.slPlaceBetween;
+import me.antigeddon.snapplace.bDebug;
 import me.antigeddon.snapplace.bMain;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -25,41 +26,63 @@ public class bPlace implements Listener {
         boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.need-sneaking", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
-        if (event.isCancelled())
+        if (event.isCancelled()) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.WRPLACE_FIRST_EVENT_CANCELLED,
+                    "Cancelled by " + event.getEventName());
             return;
+        }
 
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK)
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.WRPLACE_ACTION,
+                    "Action = " + event.getAction());
             return;
+        }
 
         Player player = event.getPlayer();
         ItemStack inHand = player.getItemInHand();
 
-        if (inHand == null)
+        if (inHand == null) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_NO_ITEM, "Player is not holding anything");
             return;
+        }
+
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterplacements.wallandroof"))
+                !player.hasPermission("SnapPlace.betterplacements.wallandroof")) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_NO_PERMISSION, "Missing permission: SnapPlace.betterplacements.wallandroof");
             return;
+        }
 
         Material itemType = inHand.getType();
 
-        if (!enable || !pumpkin)
+        if (!enable || !pumpkin) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_FEATURE_DISABLED, "Better placements or wall/roof placement disabled");
             return;
+        }
 
-        if (!player.isSneaking() && sneak)
+        if (!player.isSneaking() && sneak) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_NOT_SNEAKING, "Sneaking required but player not sneaking");
             return;
+        }
 
-        if (!(itemType == Material.FENCE || itemType == Material.JACK_O_LANTERN || itemType == Material.PUMPKIN))
+        if (!(itemType == Material.FENCE || itemType == Material.JACK_O_LANTERN || itemType == Material.PUMPKIN)) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_UNSUPPORTED_ITEM, "Item type = " + itemType);
             return;
+        }
 
         Block clickedBlock = event.getClickedBlock();
 
-        if (clickedBlock == null)
+        if (clickedBlock == null) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_NULL, "Clicked block is null");
             return;
+        }
 
-        if (bBlockType.isClickable(clickedBlock.getType()))
-            if (!player.isSneaking() || !placeOn || !player.hasPermission("SnapPlace.betterplacements.interactables"))
+        if (bBlockType.isClickable(clickedBlock.getType())) {
+            if (!player.isSneaking() || !placeOn || !player.hasPermission("SnapPlace.betterplacements.interactables")) {
+                bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKABLE_BLOCK, "Clicked a clickable block: " + clickedBlock.getType());
                 return;
+            }
+        }
 
         BlockFace face = event.getBlockFace();
         Block targetBlock = clickedBlock.getRelative(face);
@@ -67,17 +90,25 @@ public class bPlace implements Listener {
         byte targetData = targetBlock.getData();
         Block blockUnder = targetBlock.getRelative(BlockFace.DOWN);
 
-        if (!bBlockType.isNotSolid(blockUnder.getType()))
+        if (!bBlockType.isNotSolid(blockUnder.getType())) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "Block under target is solid: " + blockUnder.getType());
             return;
+        }
 
-        if (bBlockType.isFluid(clickedBlock.getType()))
+        if (bBlockType.isFluid(clickedBlock.getType())) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_FLUID, "Clicked block is fluid: " + clickedBlock.getType());
             return;
+        }
 
-        if (!bBlockType.isFluid(targetType))
+        if (!bBlockType.isFluid(targetType)) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_TARGET_NOT_FLUID, "Target block is not fluid: " + targetType);
             return;
+        }
 
-        if (bBlockType.isEntityBlockingBlock(targetBlock.getLocation(), player, itemType, targetBlock.getData()))
+        if (bBlockType.isEntityBlockingBlock(targetBlock.getLocation(), player, itemType, targetBlock.getData())) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_ENTITY_BLOCKING, "Entity blocking at location");
             return;
+        }
 
         event.setCancelled(true);
 
@@ -97,19 +128,26 @@ public class bPlace implements Listener {
             float yaw = player.getLocation().getYaw();
             byte direction = getPumpkinDirection(yaw);
             targetBlock.setData(direction);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_DIRECTION_SET, "Set pumpkin direction: " + direction);
         }
 
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
             targetBlock.setType(targetType);
             targetBlock.setData(targetData);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_PLACE_CANCELLED, "BlockPlaceEvent was cancelled");
             return;
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
-        if (!bBlockType.isClickable(clickedBlock.getType()))
+        if (!bBlockType.isClickable(clickedBlock.getType())) {
             slPlaceBetween.swingArm(player);
+        }
+
+        bDebug.debug(player, bDebug.DebugType.WRPLACE_SUCCESS, "Block placed successfully: " + itemType);
     }
+
+
 
     public static byte getPumpkinDirection(float yaw) {
         yaw = (yaw % 360 + 360) % 360;
@@ -131,33 +169,43 @@ public class bPlace implements Listener {
         boolean rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable", true);
         boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.need-sneaking", false);
 
-        if (event.isCancelled())
+        if (event.isCancelled()) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.RAIL_FIRST_EVENT_CANCELLED, "Cancelled by " + event.getEventName());
             return;
+        }
 
-        if (!enable || !rail)
+        if (!enable || !rail) {
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.RAIL_FEATURE_DISABLED, "Feature disabled in config");
             return;
+        }
 
         Player player = event.getPlayer();
         Block block = event.getBlockPlaced();
 
-        if (!isRail(block))
+        if (!isRail(block)) {
+            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_RAIL, "Block is not a rail: " + block.getType());
             return;
+        }
 
-        if (!player.isSneaking() && sneak)
+        if (!player.isSneaking() && sneak) {
+            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_SNEAKING, "Sneaking required for orientable rails");
             return;
-
-        if (event.isCancelled())
-            return;
+        }
 
         if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterplacements.rails"))
+                !player.hasPermission("SnapPlace.betterplacements.rails")) {
+            bDebug.debug(player, bDebug.DebugType.RAIL_NO_PERMISSION, "Missing permission: SnapPlace.betterplacements.rails");
             return;
+        }
 
         byte orientation = hasAdjacentRail(block, player.getLocation().getYaw());
 
         if (orientation != -1) {
             block.setData(orientation);
             block.getState().update(true);
+            bDebug.debug(player, bDebug.DebugType.RAIL_ORIENTED, "Rail orientation set to " + orientation);
+        } else {
+            bDebug.debug(player, bDebug.DebugType.RAIL_NO_ORIENTATION, "No valid adjacent rails found");
         }
     }
 

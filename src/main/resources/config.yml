@@ -59,3 +59,13 @@ edit-sign:
     # If "true", players will be able to edit signs using the /editsign command. (Default: true)
     command-timeout: 40
     # Time in seconds before the sign edit request expires. (Default: 40)
+
+
+debug:
+    enable: false
+    # If "true", players will see chat messages explaining event results and cancellations. (Default: false)
+    output:
+        chat: true
+        # If "true", debug messages will be sent to the chat of the player who triggered the event. (Default: true)
+        console: true
+        # If "true", debug messages will be printed in the server console. (Default: true)

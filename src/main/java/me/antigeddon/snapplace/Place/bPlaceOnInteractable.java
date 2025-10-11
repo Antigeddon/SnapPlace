@@ -1,5 +1,6 @@
 package me.antigeddon.snapplace.Place;
 
+import me.antigeddon.snapplace.bDebug;
 import me.antigeddon.snapplace.bMain;
 import net.minecraft.server.*;
 import org.bukkit.Bukkit;
@@ -41,51 +42,83 @@ public class bPlaceOnInteractable implements Listener {
             Material.TRAP_DOOR
     ));
 
-    @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
+    @EventHandler(priority = Event.Priority.Highest, ignoreCancelled = true)
     public void onSneakInteract(PlayerInteractEvent event) {
         boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
         boolean slEnable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
         boolean sEnable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
         boolean replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
-
-        if (event.isCancelled())
-            return;
-
-        if (!event.getAction().toString().contains("RIGHT_CLICK"))
-            return;
+        boolean pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
 
         Player player = event.getPlayer();
 
-        if (!enable || !placeOn)
+        if (event.isCancelled()) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_EVENT_CANCELLED,
+                    "Cancelled by " + event.getEventName());
             return;
+        }
 
-        if (event.getClickedBlock() == null || event.getBlockFace() == null)
+        if (!event.getAction().toString().contains("RIGHT_CLICK")) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_WRONG_ACTION,
+                    "Action = " + event.getAction());
             return;
+        }
 
-        if (!player.isOp() &&
-                !player.hasPermission("SnapPlace.betterplacements.interactables"))
+        if (!enable || !placeOn) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_DISABLED,
+                    "Enable = " + enable + ", PlaceOn = " + placeOn);
             return;
+        }
 
         Block clicked = event.getClickedBlock();
+
+        if (clicked == null) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_BLOCK, "");
+            return;
+        }
+
+        if (event.getBlockFace() == null) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_FACE, "");
+            return;
+        }
+
+        if (!player.isOp() &&
+                !player.hasPermission("SnapPlace.betterplacements.interactables")) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_PERMISSION,
+                    "Missing permission: SnapPlace.betterplacements.interactables");
+            return;
+        }
+
         BlockFace face = event.getBlockFace();
         Material type = clicked.getType();
         ItemStack inHand = player.getItemInHand();
         Block target = clicked.getRelative(face);
         Material targetType = target.getType();
         byte targetData = target.getData();
-        Material itemType = inHand.getType();
         Block underTarget = target.getRelative(BlockFace.DOWN);
         Material underType = underTarget.getType();
 
-        if (!player.isSneaking() || itemType == Material.AIR)
+        if (inHand == null || inHand.getType() == Material.AIR) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_ITEM,"In hand = " + (inHand == null ? "null" : inHand.getType()));
             return;
+        }
 
-        if (!INTERACTIVE_BLOCKS.contains(type))
+        Material itemType = inHand.getType();
+
+        if (!player.isSneaking()) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_SNEAK, "");
             return;
+        }
+
+        if (!INTERACTIVE_BLOCKS.contains(type)) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_INTERACTIVE, "ClickedType = " + type);
+            return;
+        }
 
         if (!isPlaceableItem(itemType) || itemType == Material.PISTON_EXTENSION || itemType == Material.PISTON_MOVING_PIECE) {
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_INVALID_BLOCK, "ItemType = " + itemType);
             return;
         }
 
@@ -94,14 +127,17 @@ public class bPlaceOnInteractable implements Listener {
 
         if (itemType == Material.SIGN) {
             placedBlock = (face == BlockFace.UP) ? Material.SIGN_POST : Material.WALL_SIGN;
+            bDebug.debug(player, bDebug.DebugType.INTERACT_SIGN_CONVERT, "PlacedBlock = " + placedBlock);
 
         } else {
             placedBlock = convertItemToBlock(itemType);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_ITEM_CONVERT, "Item = " + itemType + ", Block = " + placedBlock);
         }
 
         if (bBlockType.isFragileInteractableButSigns(type)) {
             if (bBlockType.isNotDoorAndBedCompatible(placedBlock) && itemType != Material.SIGN) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_INCOMPATIBLE_DOOR_BED_BUT_SIGN, "ClickedBlock = " + type + ", PlacedBlock = " + placedBlock);
                 return;
             }
         }
@@ -109,6 +145,7 @@ public class bPlaceOnInteractable implements Listener {
         if (bBlockType.isVeryFragileInteractable(type)) {
             if (bBlockType.isNotDoorAndBedCompatible(placedBlock) || itemType == Material.SIGN) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_INCOMPATIBLE_DOOR_BED, "ClickedBlock = " + type + ", PlacedBlock = " + placedBlock);
                 return;
             }
         }
@@ -123,9 +160,12 @@ public class bPlaceOnInteractable implements Listener {
             }
         }
 
+        bDebug.debug(player, bDebug.DebugType.INTERACT_ITEM_DATA, "ItemData = " + data);
+
         if (placedBlock != Material.PAINTING) {
             if (!bBlockType.isFluid(targetType)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_TARGET_NOT_FLUID, "TargetBlock = " + targetType);
                 return;
             }
         }
@@ -135,6 +175,7 @@ public class bPlaceOnInteractable implements Listener {
                 byte targetFluidData = target.getData();
 
                 if (targetFluidData == data) {
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_SAME_FLUID, "Data = " + data);
                     event.setCancelled(true);
                     return;
                 }
@@ -145,20 +186,23 @@ public class bPlaceOnInteractable implements Listener {
 
                     } else {
                         event.setCancelled(true);
+                        bDebug.debug(player, bDebug.DebugType.INTERACT_SNOW_REPLACE, "");
                         return;
                     }
                 }
 
             } else if (target.getData() == data) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_SAME_DATA, "Data = " + data);
                 return;
             }
         }
 
         if (slEnable) {
             if (placedBlock == Material.STEP || placedBlock == Material.DOUBLE_STEP) {
-                if (underType == Material.STEP && underType.getData() == itemType.getData()) {
+                if (underType == Material.STEP && underType.getData() != itemType.getData()) {
                     event.setCancelled(true);
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_SLAB, "UnderBlockType = " + underType + ", UnderData = " + underType.getData());
                     return;
                 }
             }
@@ -167,6 +211,7 @@ public class bPlaceOnInteractable implements Listener {
         if ((placedBlock == Material.RED_ROSE || placedBlock == Material.YELLOW_FLOWER || placedBlock == Material.LONG_GRASS || placedBlock == Material.SAPLING)) {
             if (!bBlockType.isGroundPlant(underType)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_FLOWER, "UnderBlockType = " + underType);
                 return;
             }
         }
@@ -174,11 +219,13 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.SUGAR_CANE_BLOCK) {
             if (!bBlockType.isGroundPlant(underType) && underType != Material.SOIL && underType != Material.SUGAR_CANE_BLOCK) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_SUGAR, "UnderBlockType = " + underType);
                 return;
             }
 
             if (underType != Material.SUGAR_CANE_BLOCK && !isWaterAdjacent(underTarget)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_SUGAR_WATER, "");
                 return;
             }
         }
@@ -186,6 +233,7 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.CROPS) {
             if (underType != Material.SOIL) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_CROPS, "UnderBlockType = " + underType);
                 return;
             }
         }
@@ -193,6 +241,7 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.CHEST) {
             if (wouldCreateIllegalChest(target)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_CHEST, "");
                 return;
             }
         }
@@ -208,12 +257,14 @@ public class bPlaceOnInteractable implements Listener {
             for (Material mat : adjacentTypes) {
                 if (bBlockType.isBuildableNotCactusFriendly(mat)) {
                     event.setCancelled(true);
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_CACTUS, "AdjacentTypes = " + mat);
                     return;
                 }
             }
 
             if (underType != Material.SAND && underType != Material.CACTUS) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_CACTUS_GROUND, "UnderBlockType = " + underType);
                 return;
             }
         }
@@ -221,6 +272,7 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.DEAD_BUSH) {
             if (underType != Material.SAND) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_BUSH, "UnderBlockType = " + underType);
                 return;
             }
         }
@@ -228,12 +280,14 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.BROWN_MUSHROOM || placedBlock == Material.RED_MUSHROOM) {
             if (!bBlockType.isGroundMushroomAndSnow(underType)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_MUSHROOM, "UnderBlockType = " + underType);
                 return;
             }
 
         } else if (placedBlock == Material.SNOW) {
             if (!bBlockType.isGroundMushroomAndSnow(underType) && underType != Material.DOUBLE_STEP) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_SNOW_GROUND, "UnderBlockType = " + underType);
                 return;
             }
         }
@@ -241,22 +295,30 @@ public class bPlaceOnInteractable implements Listener {
         if (placedBlock == Material.CAKE_BLOCK) {
             if (!bBlockType.canSupportCake(underType)) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_CAKE, "UnderBlockType = " + underType);
                 return;
             }
         }
 
-        if (bBlockType.isTorches(placedBlock)) {
+        if (bBlockType.isTorches(placedBlock) && face == BlockFace.DOWN) {
             if (bBlockType.isNotSolid(underType) && underType != Material.FENCE) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_TORCH, "UnderBlockType = " + underType);
                 return;
             }
 
         } else if (bBlockType.isFragileNeedGroundWhenWallPlaced(placedBlock, data)) {
-            if (bBlockType.isNotSolid(underType)) {
+            if (bBlockType.isNotSolid(underType) &&
+                    !((placedBlock == Material.PUMPKIN || placedBlock == Material.JACK_O_LANTERN || placedBlock == Material.FENCE)
+                            && (player.hasPermission("SnapPlace.betterplacements.wallandroof") || player.isOp())
+                            && pumpkin))
+            {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_PUMPKIN, "UnderBlockType = " + underType);
                 return;
             }
         }
+
 
         if (itemType == Material.BUCKET) {
             if (bBlockType.isFluid(targetType) && targetType != Material.SNOW && targetType != Material.AIR && targetType != Material.FIRE && target.getData() == 0) {
@@ -277,15 +339,19 @@ public class bPlaceOnInteractable implements Listener {
 
                 if (fillEvent.isCancelled()) {
                     event.setCancelled(true);
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_FILL_BUCKET_CANCELLED, "");
                     return;
                 }
 
                 event.setCancelled(true);
                 target.setType(Material.AIR);
                 player.setItemInHand(new ItemStack(bucketType, 1));
+                bDebug.debug(player, bDebug.DebugType.INTERACT_FILL_BUCKET_SUCCESS, "ItemType = " + bucketType);
 
             }
+
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_FILL_BUCKET_INVALID_TARGET, "TargetBlock = " + targetType);
             return;
         }
 
@@ -302,6 +368,7 @@ public class bPlaceOnInteractable implements Listener {
 
             if (emptyEvent.isCancelled()) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_UNFILL_CANCELLED, "");
                 return;
             }
         }
@@ -310,6 +377,7 @@ public class bPlaceOnInteractable implements Listener {
 
             if (face != BlockFace.UP) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_BED_TOP_FACE, "Face = " + face);
                 return;
             }
 
@@ -328,6 +396,8 @@ public class bPlaceOnInteractable implements Listener {
 
             if (otherPart == null || !bBlockType.isFluid(otherPart.getType())) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SECOND_BLOCK,
+                        "SecondTargetType = " + (otherPart == null ? "null" : otherPart.getType()));
                 return;
             }
 
@@ -335,6 +405,7 @@ public class bPlaceOnInteractable implements Listener {
 
             if (bBlockType.isNotSolid(blockBelowOtherPart.getType())) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SECOND_UNDER_BLOCK, "SecondUnderTargetType " + blockBelowOtherPart.getType());
                 return;
             }
 
@@ -359,18 +430,28 @@ public class bPlaceOnInteractable implements Listener {
                 otherPart.setType(targetType);
                 otherPart.setData(targetData);
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_BED_PLACE_CANCELLED, "");
                 return;
             }
 
             removeOneItemFromHand(player);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SUCCESS, "TargetBlock " + target.getType() + ", TargetData = " + target.getData()
+                    + ", SecondTargetBlock = " + otherPart.getType() + ", SecondTargetData = " + otherPart.getData());
             return;
         }
 
         if (itemType == Material.WOOD_DOOR || itemType == Material.IRON_DOOR) {
             Block top = target.getRelative(BlockFace.UP);
 
-            if (!bBlockType.isFluid(top.getType()) || (face != BlockFace.UP)) {
+            if (face != BlockFace.UP) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_FACE, "Face = " + face);
+                return;
+            }
+
+            if (!bBlockType.isFluid(top.getType())) {
+                event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_SECOND_PART_NOT_FLUID, "AboveTargetBlock = " + top.getType());
                 return;
             }
 
@@ -399,16 +480,21 @@ public class bPlaceOnInteractable implements Listener {
                 top.setType(targetType);
                 top.setData(targetData);
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_PLACE_CANCELLED, "");
                 return;
             }
 
             removeOneItemFromHand(player);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_SUCCESS, "TargetBlock " + target.getType() + ", TargetData = " + target.getData()
+                    + ", SecondTargetBlock = " + top.getType() + ", SecondTargetData = " + top.getData());
             return;
-            }
+        }
 
         if (itemType == Material.PAINTING) {
+
             if (face == BlockFace.UP || face == BlockFace.DOWN) {
                 event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_PAINTING_FACE, "Face = " + face);
                 return;
             }
 
@@ -417,16 +503,20 @@ public class bPlaceOnInteractable implements Listener {
             if (spawnPainting(clicked.getLocation(), data)) {
                 removeOneItemFromHand(player);
             }
+
+            bDebug.debug(player, bDebug.DebugType.INTERACT_PAINTING_SUCCESS, "BlockLocation = " + clicked.getLocation());
             return;
         }
 
         if (bBlockType.isEntityBlockingBlock(target.getLocation(), player, placedBlock, data)) {
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_ENTITY_BLOCKING, "");
             return;
         }
 
         if (data == -1) {
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_INVALID, "Data = " + data);
             return;
         }
 
@@ -451,7 +541,7 @@ public class bPlaceOnInteractable implements Listener {
                 block.getState().update(true);
             }
 
-        } else if (placedBlock == Material.FURNACE || placedBlock == Material.BURNING_FURNACE || placedBlock == Material.DISPENSER) {
+        } else if (placedBlock == Material.FURNACE || placedBlock == Material.BURNING_FURNACE || placedBlock == Material.DISPENSER || placedBlock == Material.TORCH) {
             block.setTypeIdAndData(placedBlock.getId(), data, true);
             block.setData(data);
             block.getState().update(true);
@@ -465,6 +555,7 @@ public class bPlaceOnInteractable implements Listener {
             block.setType(targetType);
             block.setData(targetData);
             event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_PLACE_CANCELLED, "");
             return;
         }
 
@@ -482,6 +573,7 @@ public class bPlaceOnInteractable implements Listener {
             triggerEmptySignEvent(block, player);
 
         removeOneItemFromHand(player);
+        bDebug.debug(player, bDebug.DebugType.INTERACT_SUCCESS, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
     }
 
     private byte getPlacementData(Material itemType, Material type, BlockFace face, Block clickedBlock, Material clickedType) {
@@ -840,13 +932,27 @@ public class bPlaceOnInteractable implements Listener {
 
 
     public static void removeOneItemFromHand(Player player) {
+
         ItemStack inHand = player.getItemInHand();
-        if (inHand == null || inHand.getType() == Material.AIR)
+
+        if (inHand == null || inHand.getType() == Material.AIR) {
+            bDebug.debug(player, bDebug.DebugType.INTERACT_EMPTY_HAND_FATAL, "ItemType = null or AIR");
             return;
+        }
+
+        Object data = inHand.getData();
+        String dataInfo;
+        try {
+            dataInfo = (data != null) ? data.toString() : "null";
+        } catch (Exception e) {
+            dataInfo = "invalid";
+        }
 
         Material type = inHand.getType();
+
         if (type == Material.WATER_BUCKET || type == Material.LAVA_BUCKET) {
             player.setItemInHand(new ItemStack(Material.BUCKET, 1));
+            bDebug.debug(player, bDebug.DebugType.INTERACT_EMPTY_BUCKET_HAND, "ItemType = " + inHand.getType());
             return;
         }
 
@@ -861,20 +967,28 @@ public class bPlaceOnInteractable implements Listener {
                 if (amount > 1) {
                     inHand.setAmount(amount - 1);
                     inHand.setDurability((short)0);
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_MINUS, "ItemType = " + inHand.getType() + ", ItemData = " + dataInfo);
 
                 } else {
                     player.getInventory().setItemInHand(null);
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_BREAK, "");
                 }
             }
         }
 
         int newAmount = inHand.getAmount() - 1;
+
         if (newAmount <= 0) {
             player.setItemInHand(null);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_HAND_ZERO, "");
 
         } else {
             inHand.setAmount(newAmount);
             player.setItemInHand(inHand);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_HAND_MINUS,
+                    "ItemType = " + inHand.getType() +
+                            ", ItemData = " + dataInfo +
+                            ", ItemAmount = " + inHand.getAmount());
         }
     }
 
