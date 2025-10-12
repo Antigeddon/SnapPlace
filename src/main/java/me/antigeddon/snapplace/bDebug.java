@@ -103,6 +103,7 @@ public class bDebug {
         INTERACT_DOOR_SUCCESS,
         INTERACT_PAINTING_FACE,
         INTERACT_PAINTING_SUCCESS,
+        INTERACT_RAIL,
         INTERACT_ENTITY_BLOCKING,
         INTERACT_INVALID,
         INTERACT_PLACE_CANCELLED,
@@ -180,7 +181,7 @@ public class bDebug {
                 message = "§c[SnowLayers] Clicked block is null §f" + info;
                 break;
             case SNOW_CLICKED_TYPE:
-                message = "§c[SnowLayers] Player is not clicking a snowlayer §f" + info;
+                message = "§c[SnowLayers] Player is not clicking a snowlayers §f" + info;
                 break;
             case SNOW_NO_SNOW_IN_HAND:
                 message = "§c[SnowLayers] Player is not holding snow §f" + info;
@@ -431,6 +432,9 @@ public class bDebug {
             case INTERACT_PAINTING_SUCCESS:
                 message = "§a[Interact] Painting spawned successfully §f" + info;
                 break;
+            case INTERACT_RAIL:
+                message = "§c[Interact] Ignoring orientable rails (function disabled) §f" + info;
+                break;
             case INTERACT_ENTITY_BLOCKING:
                 message = "§c[Interact] Entity is blocking placement §f" + info;
                 break;
@@ -626,17 +630,17 @@ public class bDebug {
     }
 
     public static void debug(Player player, String message) {
+
         boolean debugEnabled = bMain.getPluginConfig().getBoolean("debug.enable", false);
-        if (!debugEnabled) {
+
+        if (!debugEnabled)
             return;
-        }
 
         boolean logToChat = bMain.getPluginConfig().getBoolean("debug.output.chat", true);
         boolean logToConsole = bMain.getPluginConfig().getBoolean("debug.output.console", true);
 
-        if (logToChat && player != null) {
+        if (logToChat && player != null)
             player.sendMessage(bMain.getInstance().pName() + "§c[Debug]§f " + message);
-        }
 
         if (logToConsole) {
             String consoleMessage = message.replaceAll("§[0-9a-fk-or]", "");

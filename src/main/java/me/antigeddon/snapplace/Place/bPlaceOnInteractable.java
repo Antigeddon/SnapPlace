@@ -100,7 +100,7 @@ public class bPlaceOnInteractable implements Listener {
         Material underType = underTarget.getType();
 
         if (inHand == null || inHand.getType() == Material.AIR) {
-            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_ITEM,"In hand = " + (inHand == null ? "null" : inHand.getType()));
+            bDebug.debug(player, bDebug.DebugType.INTERACT_NO_ITEM,"InHandItemType = " + (inHand == null ? "null" : inHand.getType()));
             return;
         }
 
@@ -154,7 +154,7 @@ public class bPlaceOnInteractable implements Listener {
             data = inHand.getData().getData();
 
         } else {
-            data = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
+            data = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target, player);
             if (data == -1) {
                 data = getPlacementData(itemType, placedBlock, face, clicked, type);
             }
@@ -381,7 +381,7 @@ public class bPlaceOnInteractable implements Listener {
                 return;
             }
 
-            byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
+            byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target, player);
 
             if (baseData == -1) baseData = 0;
 
@@ -455,7 +455,7 @@ public class bPlaceOnInteractable implements Listener {
                 return;
             }
 
-            byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target);
+            byte baseData = getDirectionalData(itemType, placedBlock, face, player.getLocation().getYaw(), player.getLocation().getPitch(), target, player);
 
             if (baseData == -1) baseData = 0;
             event.setCancelled(true);
@@ -535,6 +535,7 @@ public class bPlaceOnInteractable implements Listener {
 
         if (bBlockType.isRail(placedBlock)) {
             block.setType(placedBlock);
+            block.getState().update(true);
 
             if (data != -2) {
                 block.setData(data);
@@ -723,7 +724,7 @@ public class bPlaceOnInteractable implements Listener {
         return material == Material.WATER || material == Material.STATIONARY_WATER;
     }
 
-    private byte getDirectionalData(Material itemType, Material type, BlockFace face, float yaw, float pitch, Block block) {
+    private byte getDirectionalData(Material itemType, Material type, BlockFace face, float yaw, float pitch, Block block, Player player) {
         boolean rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable",true);
 
         int direction = Math.round(yaw / 90f) & 3;
@@ -735,8 +736,12 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         if (bBlockType.isRail(type)) {
-            if (!rail)
-                return 0;
+
+            if (!rail || (!player.hasPermission("SnapPlace.betterplacements.rails") && !player.isOp())) {
+                bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL, "BlockData = 0");
+                return -2;
+            }
+
             byte orientation = bPlace.hasAdjacentRail(block, yaw);
             if (orientation == -1) {
                 return -2;

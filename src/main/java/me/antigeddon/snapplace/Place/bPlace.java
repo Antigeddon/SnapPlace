@@ -46,7 +46,6 @@ public class bPlace implements Listener {
             return;
         }
 
-
         if (!player.isOp() &&
                 !player.hasPermission("SnapPlace.betterplacements.wallandroof")) {
             bDebug.debug(player, bDebug.DebugType.WRPLACE_NO_PERMISSION, "Missing permission: SnapPlace.betterplacements.wallandroof");
@@ -56,30 +55,30 @@ public class bPlace implements Listener {
         Material itemType = inHand.getType();
 
         if (!enable || !pumpkin) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_FEATURE_DISABLED, "Better placements or wall/roof placement disabled");
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_FEATURE_DISABLED, "enable = " + enable + ", placeable-on-walls-and-roofs.enable = " + pumpkin);
             return;
         }
 
         if (!player.isSneaking() && sneak) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_NOT_SNEAKING, "Sneaking required but player not sneaking");
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_NOT_SNEAKING, "");
             return;
         }
 
         if (!(itemType == Material.FENCE || itemType == Material.JACK_O_LANTERN || itemType == Material.PUMPKIN)) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_UNSUPPORTED_ITEM, "Item type = " + itemType);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_UNSUPPORTED_ITEM, "ItemType = " + itemType);
             return;
         }
 
         Block clickedBlock = event.getClickedBlock();
 
         if (clickedBlock == null) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_NULL, "Clicked block is null");
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_NULL, "");
             return;
         }
 
         if (bBlockType.isClickable(clickedBlock.getType())) {
             if (!player.isSneaking() || !placeOn || !player.hasPermission("SnapPlace.betterplacements.interactables")) {
-                bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKABLE_BLOCK, "Clicked a clickable block: " + clickedBlock.getType());
+                bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKABLE_BLOCK, "ClickedBlockType = " + clickedBlock.getType());
                 return;
             }
         }
@@ -91,22 +90,22 @@ public class bPlace implements Listener {
         Block blockUnder = targetBlock.getRelative(BlockFace.DOWN);
 
         if (!bBlockType.isNotSolid(blockUnder.getType())) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "Block under target is solid: " + blockUnder.getType());
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "UnderBlockType = " + blockUnder.getType());
             return;
         }
 
         if (bBlockType.isFluid(clickedBlock.getType())) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_FLUID, "Clicked block is fluid: " + clickedBlock.getType());
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_CLICKED_FLUID, "ClickedBlockType = " + clickedBlock.getType());
             return;
         }
 
         if (!bBlockType.isFluid(targetType)) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_TARGET_NOT_FLUID, "Target block is not fluid: " + targetType);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_TARGET_NOT_FLUID, "BlockType = " + targetType);
             return;
         }
 
         if (bBlockType.isEntityBlockingBlock(targetBlock.getLocation(), player, itemType, targetBlock.getData())) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_ENTITY_BLOCKING, "Entity blocking at location");
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_ENTITY_BLOCKING, "");
             return;
         }
 
@@ -128,14 +127,14 @@ public class bPlace implements Listener {
             float yaw = player.getLocation().getYaw();
             byte direction = getPumpkinDirection(yaw);
             targetBlock.setData(direction);
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_DIRECTION_SET, "Set pumpkin direction: " + direction);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_DIRECTION_SET, "PumpkinDirection = " + direction);
         }
 
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
             targetBlock.setType(targetType);
             targetBlock.setData(targetData);
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_PLACE_CANCELLED, "BlockPlaceEvent was cancelled");
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_PLACE_CANCELLED, "");
             return;
         }
 
@@ -144,7 +143,7 @@ public class bPlace implements Listener {
             slPlaceBetween.swingArm(player);
         }
 
-        bDebug.debug(player, bDebug.DebugType.WRPLACE_SUCCESS, "Block placed successfully: " + itemType);
+        bDebug.debug(player, bDebug.DebugType.WRPLACE_SUCCESS, "BlockType = " + itemType + ", BlockData = " + targetData);
     }
 
 
@@ -175,7 +174,7 @@ public class bPlace implements Listener {
         }
 
         if (!enable || !rail) {
-            bDebug.debug(event.getPlayer(), bDebug.DebugType.RAIL_FEATURE_DISABLED, "Feature disabled in config");
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.RAIL_FEATURE_DISABLED, "");
             return;
         }
 
@@ -183,12 +182,12 @@ public class bPlace implements Listener {
         Block block = event.getBlockPlaced();
 
         if (!isRail(block)) {
-            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_RAIL, "Block is not a rail: " + block.getType());
+            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_RAIL, "BlockType = " + block.getType());
             return;
         }
 
         if (!player.isSneaking() && sneak) {
-            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_SNEAKING, "Sneaking required for orientable rails");
+            bDebug.debug(player, bDebug.DebugType.RAIL_NOT_SNEAKING, "");
             return;
         }
 
@@ -203,9 +202,9 @@ public class bPlace implements Listener {
         if (orientation != -1) {
             block.setData(orientation);
             block.getState().update(true);
-            bDebug.debug(player, bDebug.DebugType.RAIL_ORIENTED, "Rail orientation set to " + orientation);
+            bDebug.debug(player, bDebug.DebugType.RAIL_ORIENTED, "RailOrientation = " + orientation);
         } else {
-            bDebug.debug(player, bDebug.DebugType.RAIL_NO_ORIENTATION, "No valid adjacent rails found");
+            bDebug.debug(player, bDebug.DebugType.RAIL_NO_ORIENTATION, "");
         }
     }
 
@@ -220,7 +219,9 @@ public class bPlace implements Listener {
     }
 
     public static byte hasAdjacentRail(Block block, float yaw) {
-        if (block == null) return -1;
+
+        if (block == null)
+            return -1;
 
         int[][] directions = {
                 {1, 0}, {-1, 0}, {0, 1}, {0, -1}

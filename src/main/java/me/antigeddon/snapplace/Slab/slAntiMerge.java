@@ -28,7 +28,8 @@ public class slAntiMerge implements Listener {
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
         if (event.isCancelled()) {
-            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_MERGING_EVENT_CANCELLED, "Event was already cancelled.");
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_MERGING_EVENT_CANCELLED,
+                    "Cancelled by " + event.getEventName());
             return;
         }
 

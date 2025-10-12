@@ -50,7 +50,7 @@ public class sSnow implements Listener {
         Block adjacent = clicked.getRelative(event.getBlockFace());
 
         if (inHand == null || inHand.getType() != Material.SNOW) {
-            bDebug.debug(player, bDebug.DebugType.SNOW_NO_SNOW_IN_HAND, "In hand = " + (inHand == null ? "null" : inHand.getType()));
+            bDebug.debug(player, bDebug.DebugType.SNOW_NO_SNOW_IN_HAND, "InHandItemType = " + (inHand == null ? "null" : inHand.getType()));
             return;
         }
 

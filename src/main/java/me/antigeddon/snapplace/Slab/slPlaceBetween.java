@@ -31,7 +31,8 @@ public class slPlaceBetween implements Listener {
         boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
         if (event.isCancelled()) {
-            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_BETWEEN_EVENT_CANCELLED, "Event = " + event.getEventName());
+            bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_BETWEEN_EVENT_CANCELLED,
+                    "Cancelled by " + event.getEventName());
             return;
         }
 
