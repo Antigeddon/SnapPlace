@@ -14,11 +14,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.painting.PaintingPlaceEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
 import java.util.*;
 
@@ -388,10 +391,18 @@ public class bPlaceOnInteractable implements Listener {
             Block otherPart = null;
 
             switch (baseData) {
-                case 0: otherPart = target.getRelative(BlockFace.WEST); break;
-                case 1: otherPart = target.getRelative(BlockFace.NORTH); break;
-                case 2: otherPart = target.getRelative(BlockFace.EAST); break;
-                case 3: otherPart = target.getRelative(BlockFace.SOUTH); break;
+                case 0:
+                    otherPart = target.getRelative(BlockFace.WEST);
+                    break;
+                case 1:
+                    otherPart = target.getRelative(BlockFace.NORTH);
+                    break;
+                case 2:
+                    otherPart = target.getRelative(BlockFace.EAST);
+                    break;
+                case 3:
+                    otherPart = target.getRelative(BlockFace.SOUTH);
+                    break;
             }
 
             if (otherPart == null || !bBlockType.isFluid(otherPart.getType())) {
@@ -408,7 +419,6 @@ public class bPlaceOnInteractable implements Listener {
                 bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SECOND_UNDER_BLOCK, "SecondUnderTargetType " + blockBelowOtherPart.getType());
                 return;
             }
-
             event.setCancelled(true);
             BlockState targetBlockState = target.getState();
             BlockPlaceEvent placeEvent = new BlockPlaceEvent(
@@ -500,11 +510,51 @@ public class bPlaceOnInteractable implements Listener {
 
             event.setCancelled(true);
 
-            if (spawnPainting(clicked.getLocation(), data)) {
+            if (spawnPainting(clicked.getLocation(), data, player, clicked, face)) {
                 removeOneItemFromHand(player);
             }
 
             bDebug.debug(player, bDebug.DebugType.INTERACT_PAINTING_SUCCESS, "BlockLocation = " + clicked.getLocation());
+            return;
+        }
+
+        if (itemType == Material.FLINT_AND_STEEL) {
+
+            event.setCancelled(true);
+            BlockIgniteEvent igniteEvent = new BlockIgniteEvent(
+                    target,
+                    BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL,
+                    player);
+
+            BlockPlaceEvent placeEvent = new BlockPlaceEvent(
+                    target,
+                    target.getState(),
+                    clicked,
+                    inHand,
+                    player,
+                    true);
+
+            target.setTypeIdAndData(placedBlock.getId(), data, true);
+
+            org.bukkit.Bukkit.getPluginManager().callEvent(igniteEvent);
+            if (igniteEvent.isCancelled()) {
+                target.setType(targetType);
+                target.setData(targetData);
+                event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_IGNITE_CANCELLED, "");
+                return;
+            }
+            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+            if (placeEvent.isCancelled()) {
+                target.setType(targetType);
+                target.setData(targetData);
+                event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_PLACE_CANCELLED, "");
+                return;
+            }
+
+            removeOneItemFromHand(player);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_SUCCESS, "PlacedBlock = " + target.getType() + ", PlacedData = " + target.getData());
             return;
         }
 
@@ -964,10 +1014,10 @@ public class bPlaceOnInteractable implements Listener {
         if (type == Material.FLINT_AND_STEEL) {
             short durability = inHand.getDurability();
             durability++;
-            inHand.setDurability(durability);
-
             int maxDurability = 65;
+
             if (durability >= maxDurability) {
+
                 int amount = inHand.getAmount();
                 if (amount > 1) {
                     inHand.setAmount(amount - 1);
@@ -978,7 +1028,12 @@ public class bPlaceOnInteractable implements Listener {
                     player.getInventory().setItemInHand(null);
                     bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_BREAK, "");
                 }
+
+            } else {
+                inHand.setDurability(durability);
             }
+
+            return;
         }
 
         int newAmount = inHand.getAmount() - 1;
@@ -997,7 +1052,7 @@ public class bPlaceOnInteractable implements Listener {
         }
     }
 
-    public static boolean spawnPainting(Location loc, byte direction) {
+    public static boolean spawnPainting(Location loc, byte direction, Player player, Block clicked, BlockFace face) {
 
         if (direction == -1)
             return false;
@@ -1007,6 +1062,18 @@ public class bPlaceOnInteractable implements Listener {
 
         if (!painting.h())
             return false;
+
+        PaintingPlaceEvent placeEvent = new PaintingPlaceEvent(
+                (org.bukkit.entity.Painting) painting.getBukkitEntity(),
+                player,
+                clicked,
+                face
+        );
+
+        Bukkit.getPluginManager().callEvent(placeEvent);
+        if (placeEvent.isCancelled()) {
+            return false;
+        }
 
         world.addEntity(painting);
         return true;

@@ -114,6 +114,9 @@ public class bDebug {
         INTERACT_FLINT_BREAK,
         INTERACT_HAND_ZERO,
         INTERACT_HAND_MINUS,
+        INTERACT_IGNITE_CANCELLED,
+        INTERACT_FLINT_SUCCESS,
+        INTERACT_FLINT_PLACE_CANCELLED,
 
         // --- Slab Merging ---
         SLAB_MERGING_EVENT_CANCELLED,
@@ -465,6 +468,16 @@ public class bDebug {
             case INTERACT_HAND_MINUS:
                 message = "§a[ItemRemover] Removed one item from hand §f" + info;
                 break;
+            case INTERACT_IGNITE_CANCELLED:
+                message = "§c[Interact] Block ignite event was cancelled §f" + info;
+                break;
+            case INTERACT_FLINT_SUCCESS:
+                message = "§a[Interact] Fire from flint and steel spawned successfully §f" + info;
+                break;
+            case INTERACT_FLINT_PLACE_CANCELLED:
+                message = "§c[Interact] Block place event (from flint and steel) was cancelled §f" + info;
+                break;
+
 
             // --- Signs Editions ---
             case SIGN_PLACE_CANCELLED:
