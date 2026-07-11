@@ -77,10 +77,7 @@ public class slPillarFix {
             Block b        = affected.get(i);
             Material type  = types.get(i);
             byte meta      = data.get(i);
-            b.setType(type);
-            if (type == Material.STEP || type == Material.DOUBLE_STEP) {
-                b.setData(meta);
-            }
+            b.setTypeIdAndData(type.getId(), meta, false);
             player.sendBlockChange(b.getLocation(), type, meta);
         }
 
