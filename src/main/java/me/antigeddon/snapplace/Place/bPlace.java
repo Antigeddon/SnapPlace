@@ -16,15 +16,32 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.Rails;
 
 public class bPlace implements Listener {
 
+    private final boolean enable;
+    private final boolean pumpkin;
+    private final boolean sneak;
+    private final boolean placeOn;
+    private final boolean rail;
+    private final boolean sneakRail;
+
+    private static final int[][] ADJACENT_DIRECTIONS = {
+            {1, 0}, {-1, 0}, {0, 1}, {0, -1}
+    };
+
+    public bPlace() {
+        this.enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
+        this.pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
+        this.sneak = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.need-sneaking", true);
+        this.placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+        this.rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable", true);
+        this.sneakRail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.need-sneaking", false);
+    }
+
     @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSneakPlace(PlayerInteractEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
-        boolean pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
-        boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.need-sneaking", true);
-        boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
         if (event.isCancelled()) {
             bDebug.debug(event.getPlayer(), bDebug.DebugType.WRPLACE_FIRST_EVENT_CANCELLED,
@@ -85,12 +102,26 @@ public class bPlace implements Listener {
 
         BlockFace face = event.getBlockFace();
         Block targetBlock = clickedBlock.getRelative(face);
+
+        if ((face == BlockFace.UP && targetBlock.getY() <= clickedBlock.getY()) ||
+                (face == BlockFace.DOWN && targetBlock.getY() >= clickedBlock.getY())) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_TARGET_OUTSIDE, "");
+            return;
+        }
+
+        if (targetBlock.getY() >= 127 && !bBlockType.isBuildableAt127(itemType)) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_Y127, "ItemType = " + itemType);
+            return;
+        }
+
         Material targetType = targetBlock.getType();
         byte targetData = targetBlock.getData();
         Block blockUnder = targetBlock.getRelative(BlockFace.DOWN);
 
-        if (!bBlockType.isNotSolid(blockUnder.getType())) {
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "UnderBlockType = " + blockUnder.getType());
+        Material underType = (targetBlock.getY() == 0) ? Material.AIR : blockUnder.getType();
+
+        if (!bBlockType.isNotSolid(underType)) {
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "UnderBlockType = " + underType);
             return;
         }
 
@@ -121,21 +152,25 @@ public class bPlace implements Listener {
                 true
         );
 
-        targetBlock.setType(itemType);
-
+        byte direction = 0;
         if (itemType == Material.PUMPKIN || itemType == Material.JACK_O_LANTERN) {
             float yaw = player.getLocation().getYaw();
-            byte direction = getPumpkinDirection(yaw);
-            targetBlock.setData(direction);
-            bDebug.debug(player, bDebug.DebugType.WRPLACE_DIRECTION_SET, "PumpkinDirection = " + direction);
+            direction = getPumpkinDirection(yaw);
         }
 
-        Bukkit.getPluginManager().callEvent(placeEvent);
-        if (placeEvent.isCancelled()) {
-            targetBlock.setType(targetType);
-            targetBlock.setData(targetData);
+        boolean isCancelled = bBlockType.placeEventPlacingSimulation(targetBlock, itemType, direction, placeEvent);
+
+        if (isCancelled) {
             bDebug.debug(player, bDebug.DebugType.WRPLACE_PLACE_CANCELLED, "");
             return;
+        }
+
+        if (itemType == Material.PUMPKIN || itemType == Material.JACK_O_LANTERN) {
+            targetBlock.setTypeIdAndData(itemType.getId(), direction, true);
+            bDebug.debug(player, bDebug.DebugType.WRPLACE_DIRECTION_SET, "PumpkinDirection = " + direction);
+        } else {
+            // Fence
+            targetBlock.setTypeIdAndData(itemType.getId(), (byte) 0, true);
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
@@ -143,7 +178,7 @@ public class bPlace implements Listener {
             slPlaceBetween.swingArm(player);
         }
 
-        bDebug.debug(player, bDebug.DebugType.WRPLACE_SUCCESS, "BlockType = " + itemType + ", BlockData = " + targetData);
+        bDebug.debug(player, bDebug.DebugType.WRPLACE_SUCCESS, "BlockType = " + itemType + ", BlockData = " + targetBlock.getData());
     }
 
 
@@ -164,9 +199,6 @@ public class bPlace implements Listener {
 
     @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onRailPlace(BlockPlaceEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
-        boolean rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable", true);
-        boolean sneak = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.need-sneaking", false);
 
         if (event.isCancelled()) {
             bDebug.debug(event.getPlayer(), bDebug.DebugType.RAIL_FIRST_EVENT_CANCELLED, "Cancelled by " + event.getEventName());
@@ -186,7 +218,7 @@ public class bPlace implements Listener {
             return;
         }
 
-        if (!player.isSneaking() && sneak) {
+        if (!player.isSneaking() && sneakRail) {
             bDebug.debug(player, bDebug.DebugType.RAIL_NOT_SNEAKING, "");
             return;
         }
@@ -200,9 +232,21 @@ public class bPlace implements Listener {
         byte orientation = hasAdjacentRail(block, player.getLocation().getYaw());
 
         if (orientation != -1) {
-            block.setData(orientation);
-            block.getState().update(true);
-            bDebug.debug(player, bDebug.DebugType.RAIL_ORIENTED, "RailOrientation = " + orientation);
+            if (isRail(block)) {
+                BlockState snapshot = block.getState();
+                if (block.getType() == Material.POWERED_RAIL) {
+                    snapshot.setData(new org.bukkit.material.PoweredRail(block.getType(), orientation));
+                } else if (block.getType()  == Material.DETECTOR_RAIL) {
+                    snapshot.setData(new org.bukkit.material.DetectorRail(block.getType() , orientation));
+                } else {
+                    snapshot.setData(new org.bukkit.material.Rails(block.getType() , orientation));
+                }
+
+                snapshot.update(true);
+                bDebug.debug(player, bDebug.DebugType.RAIL_ORIENTED, "RailOrientation = " + orientation);
+            } else {
+                bDebug.debug(player, bDebug.DebugType.RAIL_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+            }
         } else {
             bDebug.debug(player, bDebug.DebugType.RAIL_NO_ORIENTATION, "");
         }
@@ -223,14 +267,10 @@ public class bPlace implements Listener {
         if (block == null)
             return -1;
 
-        int[][] directions = {
-                {1, 0}, {-1, 0}, {0, 1}, {0, -1}
-        };
-
         Block blockAbove = block.getRelative(0, 1, 0);
         Block blockBelow = block.getRelative(0, -1, 0);
 
-        for (int[] dir : directions) {
+        for (int[] dir : ADJACENT_DIRECTIONS) {
             if (isRail(block.getRelative(dir[0], 0, dir[1])) ||
                     isRail(blockAbove.getRelative(dir[0], 0, dir[1])) ||
                     isRail(blockBelow.getRelative(dir[0], 0, dir[1]))) {

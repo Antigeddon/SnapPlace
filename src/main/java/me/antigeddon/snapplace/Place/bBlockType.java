@@ -3,8 +3,10 @@ package me.antigeddon.snapplace.Place;
 import net.minecraft.server.AxisAlignedBB;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.*;
+import org.bukkit.event.block.BlockPlaceEvent;
 
 public class bBlockType {
 
@@ -474,6 +476,50 @@ public class bBlockType {
         }
     }
 
+    public static boolean isBuildableAt127(Material material) {
+        switch (material) {
+            case SAPLING:
+            case WATER:
+            case STATIONARY_WATER:
+            case WATER_BUCKET:
+            case LAVA:
+            case STATIONARY_LAVA:
+            case LAVA_BUCKET:
+            case RAILS:
+            case POWERED_RAIL:
+            case DETECTOR_RAIL:
+            case LONG_GRASS:
+            case DEAD_BUSH:
+            case YELLOW_FLOWER:
+            case RED_ROSE:
+            case BROWN_MUSHROOM:
+            case RED_MUSHROOM:
+            case TORCH:
+            case FIRE:
+            case FLINT_AND_STEEL:
+            case REDSTONE_WIRE:
+            case REDSTONE:
+            case CROPS:
+            case LADDER:
+            case LEVER:
+            case REDSTONE_TORCH_OFF:
+            case REDSTONE_TORCH_ON:
+            case STONE_BUTTON:
+            case SNOW:
+            case SUGAR_CANE_BLOCK:
+            case SUGAR_CANE:
+            case PORTAL:
+            case DIODE_BLOCK_OFF:
+            case DIODE_BLOCK_ON:
+            case DIODE:
+            case BUCKET:
+
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static boolean isEntityBlockingBlock(Location location, Player player, Material blockType, byte data) {
         double x = location.getX();
         double y = location.getY();
@@ -584,5 +630,38 @@ public class bBlockType {
 
         net.minecraft.server.Entity nmsPlayer = ((CraftEntity) player).getHandle();
         return nmsPlayer.boundingBox.a(blockBB);
+    }
+
+    // Inject temporary block in RAM for handling place event (logblock)
+    public static boolean placeEventPlacingSimulation(Block targetBlock, Material placedMaterial, byte placedData, BlockPlaceEvent placeEvent) {
+        net.minecraft.server.WorldServer nmsWorld = ((org.bukkit.craftbukkit.CraftWorld) targetBlock.getWorld()).getHandle();
+        net.minecraft.server.Chunk chunk = nmsWorld.getChunkAt(targetBlock.getX() >> 4, targetBlock.getZ() >> 4);
+
+        int localX = targetBlock.getX() & 15;
+        int localY = targetBlock.getY();
+        int localZ = targetBlock.getZ() & 15;
+        int index = (localX << 11) | (localZ << 7) | localY;
+        int nibbleIndex = index >> 1;
+        int parity = index & 1;
+
+        byte oldId = chunk.b[index];
+        byte oldDataByte = chunk.e.a[nibbleIndex];
+
+        try {
+            chunk.b[index] = (byte) placedMaterial.getId();
+
+            if (parity == 0) {
+                chunk.e.a[nibbleIndex] = (byte) (oldDataByte & 240 | placedData & 15);
+            } else {
+                chunk.e.a[nibbleIndex] = (byte) (oldDataByte & 15 | (placedData & 15) << 4);
+            }
+            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
+
+        } finally {
+            chunk.b[index] = oldId;
+            chunk.e.a[nibbleIndex] = oldDataByte;
+        }
+
+        return placeEvent.isCancelled();
     }
 }

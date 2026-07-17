@@ -19,7 +19,9 @@ public class bDebug {
         SNOW_MAX_HEIGHT,
         SNOW_HITBOX,
         SNOW_PLACE_CANCELLED,
+        SNOW_BREAK_CANCELLED,
         SNOW_SUCCESS,
+        SNOW_WRONG,
 
         // --- Wall & Roof Placements (bPlace) ---
         WRPLACE_FIRST_EVENT_CANCELLED,
@@ -38,6 +40,8 @@ public class bDebug {
         WRPLACE_DIRECTION_SET,
         WRPLACE_PLACE_CANCELLED,
         WRPLACE_SUCCESS,
+        WRPLACE_BLOCK_TARGET_OUTSIDE,
+        WRPLACE_BLOCK_Y127,
 
         // --- Sign (cEditSign) ---
         SIGN_PLACE_CANCELLED,
@@ -53,6 +57,7 @@ public class bDebug {
         RAIL_NO_PERMISSION,
         RAIL_ORIENTED,
         RAIL_NO_ORIENTATION,
+        RAIL_WRONG,
 
         // --- Interactable Placements (bPlaceOnInteractable) ---
         INTERACT_EVENT_CANCELLED,
@@ -117,6 +122,13 @@ public class bDebug {
         INTERACT_IGNITE_CANCELLED,
         INTERACT_FLINT_SUCCESS,
         INTERACT_FLINT_PLACE_CANCELLED,
+        INTERACT_RAIL_WRONG,
+        INTERACT_FURNACE_WRONG,
+        INTERACT_WRONG,
+        INTERACT_RAIL_INVALID_ID,
+        INTERACT_BLOCK_TARGET_OUTSIDE,
+        INTERACT_BLOCK_Y127,
+
 
         // --- Slab Merging ---
         SLAB_MERGING_EVENT_CANCELLED,
@@ -142,6 +154,9 @@ public class bDebug {
         SLAB_BREAK_MERGING_NO_SLAB_BELOW,
         SLAB_BREAK_MERGING_EVENT,
         SLAB_BREAK_MERGING_CANCELLED_RESTORE,
+        SLAB_MERGING_BLOCK_TARGET_OUTSIDE,
+        SLAB_MERGING_BLOCK_Y127,
+
 
         // --- Slab Between Placement ---
         SLAB_BETWEEN_EVENT_CANCELLED,
@@ -159,6 +174,8 @@ public class bDebug {
         SLAB_BETWEEN_ENTITY_BLOCKING,
         SLAB_BETWEEN_PLACE_CANCELLED,
         SLAB_BETWEEN_SUCCESS,
+        SLAB_BETWEEN_BLOCK_TARGET_OUTSIDE,
+        SLAB_BETWEEN_BLOCK_Y127,
 
         // --- Slab Pillar Fix ---
         SLAB_PILLARFIX_SCAN_START,
@@ -213,8 +230,14 @@ public class bDebug {
             case SNOW_PLACE_CANCELLED:
                 message = "§c[SnowLayers] BlockPlaceEvent was cancelled §f" + info;
                 break;
+            case SNOW_BREAK_CANCELLED:
+                message = "§c[SnowLayers] BlockPlaceEvent was cancelled §f" + info;
+                break;
             case SNOW_SUCCESS:
                 message = "§a[SnowLayers] SnowLayer placed successfully §f" + info;
+                break;
+            case SNOW_WRONG:
+                message = "§c[SnowLayers] Invalid block in the way §f" + info;
                 break;
 
             // --- Wall & Roof Placement ---
@@ -266,6 +289,13 @@ public class bDebug {
             case WRPLACE_SUCCESS:
                 message = "§a[WallRoof] Block placed successfully §f" + info;
                 break;
+            case WRPLACE_BLOCK_TARGET_OUTSIDE:
+                message = "§c[WallRoof] Target outside normal coordinate §f" + info;
+                break;
+            case WRPLACE_BLOCK_Y127:
+                message = "§c[WallRoof] The block cannot be placed at y127 §f" + info;
+                break;
+
 
             // --- Rails ---
             case RAIL_FIRST_EVENT_CANCELLED:
@@ -288,6 +318,9 @@ public class bDebug {
                 break;
             case RAIL_NO_ORIENTATION:
                 message = "§c[Rails] No valid adjacent rail found §f" + info;
+                break;
+            case RAIL_WRONG:
+                message = "§c[Rails] Invalid block in the way §f" + info;
                 break;
 
             // --- Interactable Placements ---
@@ -388,7 +421,7 @@ public class bDebug {
                 message = "§c[Interact] Invalid support for torch placement §f" + info;
                 break;
             case INTERACT_PUMPKIN:
-                message = "§c[Interact] Block needs solid ground and wall/roof placement is disabled §f" + info;
+                message = "§c[Interact] Block needs solid ground and/or wall/roof placement is disabled §f" + info;
                 break;
             case INTERACT_FILL_BUCKET_CANCELLED:
                 message = "§c[Interact] Bucket fill event was cancelled §f" + info;
@@ -477,7 +510,24 @@ public class bDebug {
             case INTERACT_FLINT_PLACE_CANCELLED:
                 message = "§c[Interact] Block place event (from flint and steel) was cancelled §f" + info;
                 break;
-
+            case INTERACT_RAIL_WRONG:
+                message = "§c[Interact] Invalid block is the way (rails placement) §f" + info;
+                break;
+            case INTERACT_FURNACE_WRONG:
+                message = "§c[Interact] Invalid block is the way (furnace, dispenser and torches placement) §f" + info;
+                break;
+            case INTERACT_WRONG:
+                message = "§c[Interact] Invalid block is the way §f" + info;
+                break;
+            case INTERACT_RAIL_INVALID_ID:
+                message = "§c[Interact] Invalid data while trying to place a rail §f" + info;
+                break;
+            case INTERACT_BLOCK_TARGET_OUTSIDE:
+                message = "§c[Interact] Target outside normal coordinate §f" + info;
+                break;
+            case INTERACT_BLOCK_Y127:
+                message = "§c[Interact] The block cannot be placed at y127 §f" + info;
+                break;
 
             // --- Signs Editions ---
             case SIGN_PLACE_CANCELLED:
@@ -563,6 +613,12 @@ public class bDebug {
             case SLAB_BREAK_MERGING_CANCELLED_RESTORE:
                 message = "§a[SlabBreakMerging] Break event was cancelled. Restoring pillar state §f" + info;
                 break;
+            case SLAB_MERGING_BLOCK_TARGET_OUTSIDE:
+                message = "§c[SlabMerging] Target outside normal coordinate §f" + info;
+                break;
+            case SLAB_MERGING_BLOCK_Y127:
+                message = "§c[SlabMerging] The block cannot be placed at y127 §f" + info;
+                break;
 
             // --- Slab Between Placement ---
             case SLAB_BETWEEN_EVENT_CANCELLED:
@@ -610,6 +666,13 @@ public class bDebug {
             case SLAB_BETWEEN_SUCCESS:
                 message = "§a[SlabBetween] Slab successfully placed to form a double slab §f" + info;
                 break;
+            case SLAB_BETWEEN_BLOCK_TARGET_OUTSIDE:
+                message = "§c[SlabBetween] Target outside normal coordinate §f" + info;
+                break;
+            case SLAB_BETWEEN_BLOCK_Y127:
+                message = "§c[SlabBetween] The block cannot be placed at y127 §f" + info;
+                break;
+
 
             // --- Slab Pillar Fix ---
             case SLAB_PILLARFIX_SCAN_START:

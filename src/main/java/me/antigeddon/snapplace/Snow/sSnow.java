@@ -8,21 +8,29 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 public class sSnow implements Listener {
+    private final boolean enable;
+    private final boolean replace;
+    private final boolean sneak;
+
+    public sSnow() {
+        this.enable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
+        this.replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
+        this.sneak = bMain.getPluginConfig().getBoolean("snow-layers.need-sneaking", false);
+    }
 
     @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSnowLayerInteract(PlayerInteractEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
-        boolean replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
-        boolean sneak = bMain.getPluginConfig().getBoolean("snow-layers.need-sneaking", false);
 
         if (event.isCancelled()) {
             bDebug.debug(event.getPlayer(), bDebug.DebugType.SNOW_FIRST_EVENT_CANCELLED,
@@ -111,20 +119,36 @@ public class sSnow implements Listener {
 
         byte newData = (byte) (data + 1);
 
-        clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(78, newData, true);
-        for (Player p : Bukkit.getOnlinePlayers())
-            p.sendBlockChange(clicked.getLocation(), Material.SNOW, newData);
+        BlockBreakEvent breakEvent = new BlockBreakEvent(clicked, player);
+        Bukkit.getPluginManager().callEvent(breakEvent);
+        if (breakEvent.isCancelled()) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SNOW_BREAK_CANCELLED, "");
+            return;
+        }
 
-        BlockPlaceEvent placeEvent = new BlockPlaceEvent(clicked, clicked.getState(), clicked.getRelative(BlockFace.SELF), inHand, player, true);
+        BlockState blockBrokenState = clicked.getState();
+        blockBrokenState.setTypeId(0);
 
-        Bukkit.getServer().getPluginManager().callEvent(placeEvent);
+        BlockPlaceEvent placeEvent = new BlockPlaceEvent(clicked, blockBrokenState, clicked.getRelative(BlockFace.SELF), inHand, player, true);
 
-        if (placeEvent.isCancelled()) {
-            clicked.getWorld().getBlockAt(clicked.getX(), clicked.getY(), clicked.getZ()).setTypeIdAndData(type.getId(), data, false);
+        boolean isCancelled = bBlockType.placeEventPlacingSimulation(clicked, inHand.getType(), newData, placeEvent);
+
+        if (isCancelled) {
             event.setCancelled(true);
             bDebug.debug(player, bDebug.DebugType.SNOW_PLACE_CANCELLED, "");
             return;
         }
+
+        if (clicked.getType() != Material.SNOW) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SNOW_WRONG, "PlacedBlock = " + clicked.getType() + ", PlacedData = " + clicked.getData());
+            return;
+        }
+
+        clicked.setTypeIdAndData(78, newData, true);
+        for (Player p : Bukkit.getOnlinePlayers())
+            p.sendBlockChange(clicked.getLocation(), Material.SNOW, newData);
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
         bDebug.debug(player, bDebug.DebugType.SNOW_SUCCESS, "NewData = " + newData);

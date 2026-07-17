@@ -21,14 +21,22 @@ import net.minecraft.server.EntityPlayer;
 import net.minecraft.server.Packet18ArmAnimation;
 
 public class slPlaceBetween implements Listener {
+    private final boolean enable;
+    private final boolean between;
+    private final boolean sneak;
+    private final boolean bEnable;
+    private final boolean placeOn;
+
+    public slPlaceBetween() {
+        this.enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
+        this.between = bMain.getPluginConfig().getBoolean("better-slabs.place-between.enable", true);
+        this.sneak = bMain.getPluginConfig().getBoolean("better-slabs.place-between.need-sneaking", true);
+        this.bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
+        this.placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+    }
 
     @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSlabRightClick(PlayerInteractEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
-        boolean between = bMain.getPluginConfig().getBoolean("better-slabs.place-between.enable", true);
-        boolean sneak = bMain.getPluginConfig().getBoolean("better-slabs.place-between.need-sneaking", true);
-        boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
-        boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
         if (event.isCancelled()) {
             bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_BETWEEN_EVENT_CANCELLED,
@@ -71,11 +79,24 @@ public class slPlaceBetween implements Listener {
                 return;
             }
 
-        BlockFace face = event.getBlockFace();
-        Block target = clicked.getRelative(face);
-        Material targetType = target.getType();
         ItemStack inHand = player.getItemInHand();
 
+        if (inHand == null || inHand.getType() != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NOT_HOLDING_SLAB, "ItemType = " + (inHand == null ? "null" : inHand.getType()));
+            return;
+        }
+
+        BlockFace face = event.getBlockFace();
+        Block target = clicked.getRelative(face);
+
+        if ((face == BlockFace.UP && target.getY() <= clicked.getY()) ||
+                (face == BlockFace.DOWN && target.getY() >= clicked.getY())) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_BLOCK_TARGET_OUTSIDE, "");
+            return;
+        }
+
+        Material targetType = target.getType();
         Block slab = null;
 
         if (clicked.getType() == Material.STEP && face == BlockFace.UP) {
@@ -90,6 +111,12 @@ public class slPlaceBetween implements Listener {
             return;
         }
 
+        if (slab.getY() >= 127 && !bBlockType.isBuildableAt127(Material.DOUBLE_STEP)) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_BLOCK_Y127, "ItemType = " + inHand.getType());
+            return;
+        }
+
         if (bBlockType.isClickable(clicked.getType())) {
             if (!player.isSneaking() || !bEnable || !placeOn) {
                 bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_CLICKED_INTERACTABLE_NO_SNEAK, "Sneaking = " + player.isSneaking() + ", bEnable = " + bEnable + ", placeOn = " + placeOn);
@@ -101,11 +128,6 @@ public class slPlaceBetween implements Listener {
                 bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NO_PERMISSION_INTERACT, "");
                 return;
             }
-        }
-
-        if (inHand == null || inHand.getType() != Material.STEP) {
-            bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_NOT_HOLDING_SLAB, "ItemType = " + (inHand == null ? "null" : inHand.getType()));
-            return;
         }
 
         MaterialData slabdata = slab.getState().getData();
@@ -132,35 +154,53 @@ public class slPlaceBetween implements Listener {
                 player,
                 true);
 
-        slPillarFix.checkAndStoreStepLoop(player, slab);
+        boolean isCancelled = bBlockType.placeEventPlacingSimulation(
+                slab,
+                Material.DOUBLE_STEP,
+                inHandData.getData(),
+                placeEvent);
 
-        slab.setType(Material.AIR);
-        slPillarFix.restoreBlocks1(player);
-        slab.getWorld().getBlockAt(slab.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(43, inHandData.getData(), true);
-        slPillarFix.restoreBlocks2(player);
-
-        for (Player p : player.getServer().getOnlinePlayers())
-            p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
-        org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-
-        if (placeEvent.isCancelled()) {
-            slPillarFix.checkAndStoreStepLoop(player, slab);
-            slab.setType(Material.AIR);
-            slPillarFix.restoreBlocks1(player);
-            slab.getWorld().getBlockAt(target.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(44, inHandData.getData(), false);
-            player.sendBlockChange(slab.getLocation(), 44, inHandData.getData());
-            slPillarFix.restoreBlocks2(player);
+        if (isCancelled) {
+            slPillarFix.PillarState state = slPillarFix.scan(player, slab);
+            slPillarFix.restoreBlocks1(player, state, true);
+            player.sendBlockChange(slab.getLocation(), Material.STEP, inHandData.getData());
+            slPillarFix.restoreBlocks2(player, state, true);
             bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_PLACE_CANCELLED, "");
             return;
         }
 
+        slPillarFix.PillarState state = slPillarFix.scan(player, slab);
+
+        slPillarFix.setBlockNMS(slab, 0, (byte) 0, true);
+
+        slPillarFix.restoreBlocks1(player, state, false);
+        slab.getWorld().getBlockAt(slab.getX(), slab.getY(), slab.getZ()).setTypeIdAndData(43, inHandData.getData(), true);
+        slPillarFix.restoreBlocks2(player, state, false);
+
+        for (Player p : player.getServer().getOnlinePlayers())
+            p.sendBlockChange(slab.getLocation(), Material.DOUBLE_STEP, inHandData.getData());
+
         bPlaceOnInteractable.removeOneItemFromHand(player);
         bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_SUCCESS, "SlabType = " + slab.getType() + ", SlabData = " + slab.getData());
 
-        Block above = slab.getRelative(BlockFace.UP);
-        Material aboveType = above.getType();
 
-        if (!bBlockType.isFluid(aboveType) || slab == target)
+        Material aboveType = Material.AIR;
+        boolean canSwing = true;
+
+        // The animation is blocked client side at 126 too
+        if (slab.getY() < 126) {
+            canSwing = false;
+            Block aboveBlock = slab.getRelative(BlockFace.UP);
+            aboveType = aboveBlock.getType();
+
+            // Stone is just a dummy to trigger 1x1x1
+            if (bBlockType.isEntityBlockingBlock(aboveBlock.getLocation(), player, Material.STONE, (byte) 0)) {
+                canSwing = true;
+            }
+        }
+
+
+        if (!bBlockType.isFluid(aboveType) || canSwing || slab == target)
             if (!bBlockType.isClickable(clicked.getType()))
                 swingArm(player);
     }

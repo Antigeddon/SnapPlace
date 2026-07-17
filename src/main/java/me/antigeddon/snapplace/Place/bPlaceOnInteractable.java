@@ -23,6 +23,8 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.material.Rails;
+
 import java.util.*;
 
 public class bPlaceOnInteractable implements Listener {
@@ -45,14 +47,26 @@ public class bPlaceOnInteractable implements Listener {
             Material.TRAP_DOOR
     ));
 
+    private final boolean enable;
+    private final boolean placeOn;
+    private final boolean slEnable;
+    private final boolean sEnable;
+    private final boolean replace;
+    private final boolean pumpkin;
+    private final boolean rail;
+
+    public bPlaceOnInteractable() {
+        this.enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
+        this.placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+        this.slEnable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
+        this.sEnable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
+        this.replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
+        this.pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
+        this.rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable",true);
+    }
+
     @EventHandler(priority = Event.Priority.Highest, ignoreCancelled = true)
     public void onSneakInteract(PlayerInteractEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
-        boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
-        boolean slEnable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
-        boolean sEnable = bMain.getPluginConfig().getBoolean("snow-layers.enable", true);
-        boolean replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
-        boolean pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
 
         Player player = event.getPlayer();
 
@@ -97,17 +111,11 @@ public class bPlaceOnInteractable implements Listener {
         Material type = clicked.getType();
         ItemStack inHand = player.getItemInHand();
         Block target = clicked.getRelative(face);
-        Material targetType = target.getType();
-        byte targetData = target.getData();
-        Block underTarget = target.getRelative(BlockFace.DOWN);
-        Material underType = underTarget.getType();
 
         if (inHand == null || inHand.getType() == Material.AIR) {
             bDebug.debug(player, bDebug.DebugType.INTERACT_NO_ITEM,"InHandItemType = " + (inHand == null ? "null" : inHand.getType()));
             return;
         }
-
-        Material itemType = inHand.getType();
 
         if (!player.isSneaking()) {
             bDebug.debug(player, bDebug.DebugType.INTERACT_NO_SNEAK, "");
@@ -119,11 +127,29 @@ public class bPlaceOnInteractable implements Listener {
             return;
         }
 
+        Material itemType = inHand.getType();
+
         if (!isPlaceableItem(itemType) || itemType == Material.PISTON_EXTENSION || itemType == Material.PISTON_MOVING_PIECE) {
             event.setCancelled(true);
             bDebug.debug(player, bDebug.DebugType.INTERACT_INVALID_BLOCK, "ItemType = " + itemType);
             return;
         }
+
+        if ((face == BlockFace.UP && target.getY() <= clicked.getY()) || (face == BlockFace.DOWN && target.getY() >= clicked.getY())) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_BLOCK_TARGET_OUTSIDE, "");
+            return;
+        }
+
+        if (target.getY() >= 127 && !bBlockType.isBuildableAt127(itemType)) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.INTERACT_BLOCK_Y127, "ItemType = " + itemType);
+            return;
+        }
+
+        Material targetType = target.getType();
+        Block underTarget = target.getRelative(BlockFace.DOWN);
+        Material underType = (target.getY() == 0) ? Material.AIR : underTarget.getType();
 
         Material placedBlock;
         byte data;
@@ -350,6 +376,7 @@ public class bPlaceOnInteractable implements Listener {
                 target.setType(Material.AIR);
                 player.setItemInHand(new ItemStack(bucketType, 1));
                 bDebug.debug(player, bDebug.DebugType.INTERACT_FILL_BUCKET_SUCCESS, "ItemType = " + bucketType);
+                return;
 
             }
 
@@ -419,6 +446,7 @@ public class bPlaceOnInteractable implements Listener {
                 bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SECOND_UNDER_BLOCK, "SecondUnderTargetType " + blockBelowOtherPart.getType());
                 return;
             }
+
             event.setCancelled(true);
             BlockState targetBlockState = target.getState();
             BlockPlaceEvent placeEvent = new BlockPlaceEvent(
@@ -429,20 +457,16 @@ public class bPlaceOnInteractable implements Listener {
                     player,
                     true);
 
-            target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
-            otherPart.getWorld().getBlockAt(otherPart.getX(), otherPart.getY(), otherPart.getZ()).setTypeIdAndData(placedBlock.getId(), (byte) (baseData | 0x8), true);
+            boolean isCancelled = bBlockType.placeEventPlacingSimulation(target, placedBlock, baseData, placeEvent);
 
-            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-
-            if (placeEvent.isCancelled()) {
-                target.setType(targetType);
-                target.setData(targetData);
-                otherPart.setType(targetType);
-                otherPart.setData(targetData);
+            if (isCancelled) {
                 event.setCancelled(true);
                 bDebug.debug(player, bDebug.DebugType.INTERACT_BED_PLACE_CANCELLED, "");
                 return;
             }
+
+            target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
+            otherPart.getWorld().getBlockAt(otherPart.getX(), otherPart.getY(), otherPart.getZ()).setTypeIdAndData(placedBlock.getId(), (byte) (baseData | 0x8), true);
 
             removeOneItemFromHand(player);
             bDebug.debug(player, bDebug.DebugType.INTERACT_BED_SUCCESS, "TargetBlock " + target.getType() + ", TargetData = " + target.getData()
@@ -479,20 +503,16 @@ public class bPlaceOnInteractable implements Listener {
                     player,
                     true);
 
-            target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
-            top.getWorld().getBlockAt(top.getX(), top.getY(), top.getZ()).setTypeIdAndData(placedBlock.getId(),  (byte) (baseData | 0x8), true);
+            boolean isCancelled = bBlockType.placeEventPlacingSimulation(target, placedBlock, baseData, placeEvent);
 
-            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-
-            if (placeEvent.isCancelled()) {
-                target.setType(targetType);
-                target.setData(targetData);
-                top.setType(targetType);
-                top.setData(targetData);
+            if (isCancelled) {
                 event.setCancelled(true);
                 bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_PLACE_CANCELLED, "");
                 return;
             }
+
+            target.getWorld().getBlockAt(target.getX(), target.getY(), target.getZ()).setTypeIdAndData(placedBlock.getId(), baseData, true);
+            top.getWorld().getBlockAt(top.getX(), top.getY(), top.getZ()).setTypeIdAndData(placedBlock.getId(),  (byte) (baseData | 0x8), true);
 
             removeOneItemFromHand(player);
             bDebug.debug(player, bDebug.DebugType.INTERACT_DOOR_SUCCESS, "TargetBlock " + target.getType() + ", TargetData = " + target.getData()
@@ -526,6 +546,14 @@ public class bPlaceOnInteractable implements Listener {
                     BlockIgniteEvent.IgniteCause.FLINT_AND_STEEL,
                     player);
 
+            org.bukkit.Bukkit.getPluginManager().callEvent(igniteEvent);
+
+            if (igniteEvent.isCancelled()) {
+                event.setCancelled(true);
+                bDebug.debug(player, bDebug.DebugType.INTERACT_IGNITE_CANCELLED, "");
+                return;
+            }
+
             BlockPlaceEvent placeEvent = new BlockPlaceEvent(
                     target,
                     target.getState(),
@@ -534,24 +562,19 @@ public class bPlaceOnInteractable implements Listener {
                     player,
                     true);
 
-            target.setTypeIdAndData(placedBlock.getId(), data, true);
+            boolean isCancelled = bBlockType.placeEventPlacingSimulation(
+                    target,
+                    placedBlock,
+                    data,
+                    placeEvent);
 
-            org.bukkit.Bukkit.getPluginManager().callEvent(igniteEvent);
-            if (igniteEvent.isCancelled()) {
-                target.setType(targetType);
-                target.setData(targetData);
-                event.setCancelled(true);
-                bDebug.debug(player, bDebug.DebugType.INTERACT_IGNITE_CANCELLED, "");
-                return;
-            }
-            org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-            if (placeEvent.isCancelled()) {
-                target.setType(targetType);
-                target.setData(targetData);
+            if (isCancelled) {
                 event.setCancelled(true);
                 bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_PLACE_CANCELLED, "");
                 return;
             }
+
+            target.setTypeIdAndData(placedBlock.getId(), data, true);
 
             removeOneItemFromHand(player);
             bDebug.debug(player, bDebug.DebugType.INTERACT_FLINT_SUCCESS, "PlacedBlock = " + target.getType() + ", PlacedData = " + target.getData());
@@ -583,31 +606,63 @@ public class bPlaceOnInteractable implements Listener {
                 player,
                 true);
 
-        if (bBlockType.isRail(placedBlock)) {
-            block.setType(placedBlock);
-            block.getState().update(true);
+        boolean isCancelled = bBlockType.placeEventPlacingSimulation(target, placedBlock, data, placeEvent);
 
-            if (data != -2) {
-                block.setData(data);
-                block.getState().update(true);
-            }
-
-        } else if (placedBlock == Material.FURNACE || placedBlock == Material.BURNING_FURNACE || placedBlock == Material.DISPENSER || placedBlock == Material.TORCH) {
-            block.setTypeIdAndData(placedBlock.getId(), data, true);
-            block.setData(data);
-            block.getState().update(true);
-
-        } else {
-            block.setTypeIdAndData(placedBlock.getId(), data, true);
-        }
-
-        org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-        if (placeEvent.isCancelled()) {
-            block.setType(targetType);
-            block.setData(targetData);
+        if (isCancelled) {
             event.setCancelled(true);
             bDebug.debug(player, bDebug.DebugType.INTERACT_PLACE_CANCELLED, "");
             return;
+        }
+
+        if (bBlockType.isRail(placedBlock)) {
+            if (bBlockType.isFluid(block.getType())) {
+                block.setType(placedBlock);
+                block.getState().update(true);
+
+                if (data != -2) {
+                    if (bBlockType.isRail(placedBlock)) {
+                        BlockState snapshot = block.getState();
+                        if (block.getType() == Material.POWERED_RAIL) {
+                            snapshot.setData(new org.bukkit.material.PoweredRail(block.getType(), data));
+                        } else if (block.getType()  == Material.DETECTOR_RAIL) {
+                            snapshot.setData(new org.bukkit.material.DetectorRail(block.getType() , data));
+                        } else {
+                            snapshot.setData(new org.bukkit.material.Rails(block.getType() , data));
+                        }
+
+                        snapshot.update(true);
+
+                    } else {
+                        bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+                        return;
+                    }
+                } else {
+                    bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL_INVALID_ID, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+                    return;
+                }
+
+            } else {
+                bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+                return;
+            }
+
+        } else if (placedBlock == Material.FURNACE || placedBlock == Material.BURNING_FURNACE || placedBlock == Material.DISPENSER || placedBlock == Material.TORCH) {
+            if (bBlockType.isFluid(block.getType())) {
+                block.setTypeIdAndData(placedBlock.getId(), data, true);
+                block.setData(data);
+                block.getState().update(true);
+            } else {
+                bDebug.debug(player, bDebug.DebugType.INTERACT_FURNACE_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+                return;
+            }
+
+        } else {
+            if (bBlockType.isFluid(block.getType())) {
+                block.setTypeIdAndData(placedBlock.getId(), data, true);
+            } else {
+                bDebug.debug(player, bDebug.DebugType.INTERACT_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
+                return;
+            }
         }
 
         if (itemType == Material.WATER_BUCKET || itemType == Material.LAVA_BUCKET) {
@@ -628,7 +683,6 @@ public class bPlaceOnInteractable implements Listener {
     }
 
     private byte getPlacementData(Material itemType, Material type, BlockFace face, Block clickedBlock, Material clickedType) {
-        Block blockUnderClicked = clickedBlock.getRelative(BlockFace.DOWN);
 
         switch (type) {
             case TORCH:
@@ -700,6 +754,12 @@ public class bPlaceOnInteractable implements Listener {
 
             case LADDER:
                 if (face == BlockFace.DOWN) {
+
+                    if (clickedBlock.getY() <= 0) {
+                        return -1;
+                    }
+
+                    Block blockUnderClicked = clickedBlock.getRelative(BlockFace.DOWN);
                     if (!bBlockType.isNotSolid(blockUnderClicked.getRelative(BlockFace.WEST).getType()))  return 2;
                     if (!bBlockType.isNotSolid(blockUnderClicked.getRelative(BlockFace.EAST).getType()))  return 3;
                     if (!bBlockType.isNotSolid(blockUnderClicked.getRelative(BlockFace.SOUTH).getType())) return 4;
@@ -762,6 +822,11 @@ public class bPlaceOnInteractable implements Listener {
     }
 
     private boolean isWaterAdjacent(Block block) {
+
+        if (block.getY() < 0 || block.getY() > 127) {
+            return false;
+        }
+
         Material type1 = block.getRelative(1, 0, 0).getType();
         Material type2 = block.getRelative(-1, 0, 0).getType();
         Material type3 = block.getRelative(0, 0, 1).getType();
@@ -775,7 +840,6 @@ public class bPlaceOnInteractable implements Listener {
     }
 
     private byte getDirectionalData(Material itemType, Material type, BlockFace face, float yaw, float pitch, Block block, Player player) {
-        boolean rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable",true);
 
         int direction = Math.round(yaw / 90f) & 3;
 

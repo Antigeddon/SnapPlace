@@ -5,6 +5,7 @@ import me.antigeddon.snapplace.bMain;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -25,15 +26,17 @@ public class cEditSign implements Listener, CommandExecutor {
     private final bMain plugin;
     private final Map<UUID, String[]> pendingSignEdits = new HashMap<>();
     private final Map<UUID, Integer> pendingTasks = new HashMap<>();
+    private final boolean enabled;
+    private final int timeoutSeconds;
 
     public cEditSign(bMain plugin) {
         this.plugin = plugin;
+        this.enabled = bMain.getPluginConfig().getBoolean("edit-sign.enable", true);
+        this.timeoutSeconds = bMain.getPluginConfig().getInt("edit-sign.command-timeout", 40);
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        boolean enabled = bMain.getPluginConfig().getBoolean("edit-sign.enable", true);
-        int timeoutSeconds = bMain.getPluginConfig().getInt("edit-sign.command-timeout", 40);
 
         if (!(sender instanceof Player)) {
             sender.sendMessage("[SnapPlace] This command can only be used by players.");
@@ -221,8 +224,11 @@ public class cEditSign implements Listener, CommandExecutor {
             return;
         }
 
+        BlockState blockBrokenState = targetBlock.getState();
+        blockBrokenState.setTypeId(0);
+
         ItemStack itemInHand = player.getInventory().getItemInHand();
-        BlockPlaceEvent placeEvent = new BlockPlaceEvent(targetBlock, targetBlock.getState(), targetBlock, itemInHand, player, true);
+        BlockPlaceEvent placeEvent = new BlockPlaceEvent(targetBlock, blockBrokenState, targetBlock, itemInHand, player, true);
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
             bDebug.debug(player, bDebug.DebugType.SIGN_PLACE_CANCELLED, "");

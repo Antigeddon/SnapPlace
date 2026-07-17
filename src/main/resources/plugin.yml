@@ -1,6 +1,6 @@
 name: SnapPlace
 main: me.antigeddon.snapplace.bMain
-version: 1.0.5
+version: 1.0.6
 author: Antigeddon
 description: >
   Enhances block placement mechanics, allowing more flexible and intuitive building in Minecraft Beta 1.7.3.

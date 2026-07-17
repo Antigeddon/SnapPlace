@@ -21,11 +21,18 @@ import org.bukkit.inventory.ItemStack;
 
 public class slAntiMerge implements Listener {
 
+    private final boolean enable;
+    private final boolean bEnable;
+    private final boolean placeOn;
+
+    public slAntiMerge() {
+        this.enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
+        this.bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
+        this.placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
+    }
+
     @EventHandler(priority = Event.Priority.High, ignoreCancelled = true)
     public void onSlabPlace(PlayerInteractEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
-        boolean bEnable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
-        boolean placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
 
         if (event.isCancelled()) {
             bDebug.debug(event.getPlayer(), bDebug.DebugType.SLAB_MERGING_EVENT_CANCELLED,
@@ -96,10 +103,25 @@ public class slAntiMerge implements Listener {
 
         BlockFace face = event.getBlockFace();
         Block target = clickedBlock.getRelative(face);
-        Block below = target.getRelative(BlockFace.DOWN);
 
-        if (below.getType() != Material.STEP) {
-            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_SLAB_BELOW, "BelowBlockType = " + below.getType());
+        if ((face == BlockFace.UP && target.getY() <= clickedBlock.getY()) ||
+                (face == BlockFace.DOWN && target.getY() >= clickedBlock.getY())) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_BLOCK_TARGET_OUTSIDE, "");
+            return;
+        }
+
+        if (target.getY() >= 127 && !bBlockType.isBuildableAt127(itemType)) {
+            event.setCancelled(true);
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_BLOCK_Y127, "ItemType = " + itemType);
+            return;
+        }
+
+        Block below = target.getRelative(BlockFace.DOWN);
+        Material belowType = (target.getY() == 0) ? Material.AIR : below.getType();
+
+        if (belowType != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_NO_SLAB_BELOW, "BelowBlockType = " + belowType);
             return;
         }
 
@@ -144,9 +166,25 @@ public class slAntiMerge implements Listener {
                 player,
                 true);
 
-        slPillarFix.checkAndStoreStepLoop(player, below);
+        boolean isCancelled = bBlockType.placeEventPlacingSimulation(
+                target,
+                itemType,
+                handData,
+                placeEvent);
 
-        below.setType(Material.AIR);
+        if (isCancelled) {
+            slPillarFix.PillarState state = slPillarFix.scan(player, below);
+            player.sendBlockChange(below.getLocation(), 44, belowData);
+            slPillarFix.restoreBlocks1(player, state, true);
+            slPillarFix.restoreBlocks2(player, state, true);
+
+            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_PLACE_CANCELLED, "");
+            return;
+        }
+
+        slPillarFix.PillarState state = slPillarFix.scan(player, below);
+
+        slPillarFix.setBlockNMS(below, 0, belowData, true);
 
         if (itemType == Material.DOUBLE_STEP) {
             above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(43, handData, true);
@@ -155,24 +193,16 @@ public class slAntiMerge implements Listener {
             above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(44, handData, true);
         }
 
-        slPillarFix.restoreBlocks1(player);
+        slPillarFix.restoreBlocks1(player, state, false);
 
-        target.getWorld().getBlockAt(target.getX(), target.getY() - 1, target.getZ()).setTypeIdAndData(44, belowData, true);
+        slPillarFix.setBlockNMS(target.getWorld().getBlockAt(target.getX(), target.getY() - 1, target.getZ()), 44, belowData, true);
 
-        slPillarFix.restoreBlocks2(player);
+        slPillarFix.restoreBlocks2(player, state, false);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.sendBlockChange(above.getLocation(), itemType, handData);
             p.sendBlockChange(target.getLocation(), itemType, handData);
             p.sendBlockChange(below.getLocation(), itemType, belowData);
-        }
-
-        org.bukkit.Bukkit.getPluginManager().callEvent(placeEvent);
-        if (placeEvent.isCancelled()) {
-            above.getWorld().getBlockAt(target.getX(), above.getY(), above.getZ()).setTypeIdAndData(aboveType.getId(), aboveData, false);
-            player.sendBlockChange(below.getLocation(), 44, belowData);
-            bDebug.debug(player, bDebug.DebugType.SLAB_MERGING_PLACE_CANCELLED, "");
-            return;
         }
 
         bPlaceOnInteractable.removeOneItemFromHand(player);
@@ -181,7 +211,6 @@ public class slAntiMerge implements Listener {
 
     @EventHandler
     public void onSlabBreak(BlockBreakEvent event) {
-        boolean enable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
 
         Player player = event.getPlayer();
 
@@ -203,20 +232,20 @@ public class slAntiMerge implements Listener {
         if (block.getType() != Material.STEP && block.getType() != Material.DOUBLE_STEP)
             return;
 
-        Block below = block.getRelative(0, -1, 0);
+        Material belowType = (block.getY() == 0) ? Material.AIR : block.getRelative(0, -1, 0).getType();
 
-        if (below.getType() != Material.STEP) {
-            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_NO_SLAB_BELOW, "BelowBlockType " + below.getType());
+        if (belowType != Material.STEP) {
+            bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_NO_SLAB_BELOW, "BelowBlockType " + belowType);
             return;
         }
 
         bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_EVENT, "Event = " + event.isCancelled());
 
         if (event.isCancelled()) {
-            slPillarFix.checkAndStoreStepLoop(player, block);
-            slPillarFix.restoreBlocks1(player);
+            slPillarFix.PillarState state = slPillarFix.scan(player, block);
+            slPillarFix.restoreBlocks1(player, state, true);
             player.sendBlockChange(block.getLocation(), typeId, data);
-            slPillarFix.restoreBlocks2(player);
+            slPillarFix.restoreBlocks2(player, state, true);
             bDebug.debug(player, bDebug.DebugType.SLAB_BREAK_MERGING_CANCELLED_RESTORE, "");
         }
     }
