@@ -513,6 +513,7 @@ public class bBlockType {
             case DIODE_BLOCK_ON:
             case DIODE:
             case BUCKET:
+            case PAINTING:
 
                 return true;
             default:
@@ -634,11 +635,16 @@ public class bBlockType {
 
     // Inject temporary block in RAM for handling place event (logblock)
     public static boolean placeEventPlacingSimulation(Block targetBlock, Material placedMaterial, byte placedData, BlockPlaceEvent placeEvent) {
+        int localY = targetBlock.getY();
+
+        if (localY < 0 || localY > 127) {
+            return true;
+        }
+
         net.minecraft.server.WorldServer nmsWorld = ((org.bukkit.craftbukkit.CraftWorld) targetBlock.getWorld()).getHandle();
         net.minecraft.server.Chunk chunk = nmsWorld.getChunkAt(targetBlock.getX() >> 4, targetBlock.getZ() >> 4);
 
         int localX = targetBlock.getX() & 15;
-        int localY = targetBlock.getY();
         int localZ = targetBlock.getZ() & 15;
         int index = (localX << 11) | (localZ << 7) | localY;
         int nibbleIndex = index >> 1;

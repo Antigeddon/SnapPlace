@@ -10,6 +10,7 @@ commands:
     aliases: [esign]
     description: Modify the text on signs with line-specific input
     usage: /<command> l1:(<Text>) l2:(<Text>) l3:(<Text>) l4:(<Text>).
+    permission: SnapPlace.editsign
 
 permissions:
   SnapPlace.*:

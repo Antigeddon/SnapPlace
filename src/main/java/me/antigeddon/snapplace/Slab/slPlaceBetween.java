@@ -111,7 +111,7 @@ public class slPlaceBetween implements Listener {
             return;
         }
 
-        if (slab.getY() >= 127 && !bBlockType.isBuildableAt127(Material.DOUBLE_STEP)) {
+        if (slab.getY() == 127 && !bBlockType.isBuildableAt127(Material.DOUBLE_STEP)) {
             event.setCancelled(true);
             bDebug.debug(player, bDebug.DebugType.SLAB_BETWEEN_BLOCK_Y127, "ItemType = " + inHand.getType());
             return;

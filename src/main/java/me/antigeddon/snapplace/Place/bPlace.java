@@ -109,7 +109,7 @@ public class bPlace implements Listener {
             return;
         }
 
-        if (targetBlock.getY() >= 127 && !bBlockType.isBuildableAt127(itemType)) {
+        if (targetBlock.getY() == 127 && !bBlockType.isBuildableAt127(itemType)) {
             bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_Y127, "ItemType = " + itemType);
             return;
         }

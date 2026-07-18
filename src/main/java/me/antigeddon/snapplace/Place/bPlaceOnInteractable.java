@@ -141,7 +141,7 @@ public class bPlaceOnInteractable implements Listener {
             return;
         }
 
-        if (target.getY() >= 127 && !bBlockType.isBuildableAt127(itemType)) {
+        if (target.getY() == 127 && !bBlockType.isBuildableAt127(itemType)) {
             event.setCancelled(true);
             bDebug.debug(player, bDebug.DebugType.INTERACT_BLOCK_Y127, "ItemType = " + itemType);
             return;
