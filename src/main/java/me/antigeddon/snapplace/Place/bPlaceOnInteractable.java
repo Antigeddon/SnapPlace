@@ -614,6 +614,9 @@ public class bPlaceOnInteractable implements Listener {
             return;
         }
 
+        org.bukkit.World bukkitWorld = block.getWorld();
+        boolean netherWater = false;
+
         if (bBlockType.isRail(placedBlock)) {
             if (bBlockType.isFluid(block.getType())) {
                 block.setType(placedBlock);
@@ -629,16 +632,14 @@ public class bPlaceOnInteractable implements Listener {
                         } else {
                             snapshot.setData(new org.bukkit.material.Rails(block.getType() , data));
                         }
-
                         snapshot.update(true);
 
                     } else {
                         bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL_WRONG, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
-                        return;
                     }
+
                 } else {
                     bDebug.debug(player, bDebug.DebugType.INTERACT_RAIL_INVALID_ID, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
-                    return;
                 }
 
             } else {
@@ -656,6 +657,9 @@ public class bPlaceOnInteractable implements Listener {
                 return;
             }
 
+        } else if (itemType == Material.WATER_BUCKET && bukkitWorld.getEnvironment() == org.bukkit.World.Environment.NETHER) {
+                netherWater = true;
+
         } else {
             if (bBlockType.isFluid(block.getType())) {
                 block.setTypeIdAndData(placedBlock.getId(), data, true);
@@ -665,15 +669,10 @@ public class bPlaceOnInteractable implements Listener {
             }
         }
 
-        if (itemType == Material.WATER_BUCKET || itemType == Material.LAVA_BUCKET) {
+        if ((itemType == Material.WATER_BUCKET && !netherWater) || itemType == Material.LAVA_BUCKET) {
             block.setType(itemType == Material.WATER_BUCKET ? Material.WATER : Material.LAVA);
             block.setData((byte) 0);
         }
-
-        org.bukkit.World bukkitWorld = block.getWorld();
-
-        if (bukkitWorld.getEnvironment() == org.bukkit.World.Environment.NETHER && itemType == Material.WATER_BUCKET)
-            block.setType(Material.AIR);
 
         if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)
             triggerEmptySignEvent(block, player);
