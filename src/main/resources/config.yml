@@ -12,7 +12,7 @@
     #                                 | $$                                                       #
     #                                 | $$                                                       #
     #                                 |__/                                                       #
-    #                                                                            Version: 1.0.7  #
+    #                                                                            Version: 1.0.8  #
     ##############################################################################################
 
 snow-layers:
@@ -74,8 +74,13 @@ better-slabs:
 edit-sign:
     enable: true
     # If "true", players will be able to edit signs using the /editsign command. (Default: true)
+    need-sneaking: true
+    # If "true", players must be sneaking while clicking the sign to edit it. (Default: true)
     command-timeout: 40
     # Time in seconds before the sign edit request expires. (Default: 40)
+    reminder-cooldown: 600
+    # Time in seconds between the /editsign reminder per player when placing a sign on an interactable block.
+    # Effective only when "better-placements.place-on-interactables" is set to "true". (Default: 600) (10 minutes)
 
 
 debug:

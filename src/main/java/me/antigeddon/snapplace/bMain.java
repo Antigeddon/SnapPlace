@@ -6,6 +6,8 @@ import me.antigeddon.snapplace.Place.bPlaceOnInteractable;
 import me.antigeddon.snapplace.Slab.slAntiMerge;
 import me.antigeddon.snapplace.Slab.slPlaceBetween;
 import me.antigeddon.snapplace.Snow.sSnow;
+import net.minecraft.server.Block;
+import org.bukkit.Material;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -25,7 +27,7 @@ public class bMain extends JavaPlugin implements Listener {
 
         instance = this;
 
-        getServer().getLogger().info("[SnapPlace] 1.0.7 initialized");
+        getServer().getLogger().info("[SnapPlace] 1.0.8 initialized");
         config = new bConfig(this, "config.yml");
         config.load();
         config.printAllConfig(getLogger());
@@ -35,7 +37,7 @@ public class bMain extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(signCommand, this);
         getServer().getPluginManager().registerEvents(new slPlaceBetween(), this);
         getServer().getPluginManager().registerEvents(new slAntiMerge(), this);
-        getServer().getPluginManager().registerEvents(new bPlaceOnInteractable(), this);
+        getServer().getPluginManager().registerEvents(new bPlaceOnInteractable(this), this);
         getServer().getPluginManager().registerEvents(new bPlace(), this);
         getServer().getPluginManager().registerEvents(new sSnow(), this);
         getServer().getPluginManager().registerEvents(this, this);
@@ -43,7 +45,7 @@ public class bMain extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        getServer().getLogger().info("[SnapPlace] 1.0.7 is asleep ~ZZZzzzz...");
+        getServer().getLogger().info("[SnapPlace] 1.0.8 is asleep ~ZZZzzzz...");
     }
 
     public static bConfig getPluginConfig() {

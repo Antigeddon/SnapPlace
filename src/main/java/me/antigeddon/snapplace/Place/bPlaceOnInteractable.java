@@ -47,6 +47,7 @@ public class bPlaceOnInteractable implements Listener {
             Material.TRAP_DOOR
     ));
 
+    private final bMain plugin;
     private final boolean enable;
     private final boolean placeOn;
     private final boolean slEnable;
@@ -54,8 +55,12 @@ public class bPlaceOnInteractable implements Listener {
     private final boolean replace;
     private final boolean pumpkin;
     private final boolean rail;
+    private final boolean signEnable;
+    private final int reminderSeconds;
+    private final Set<UUID> reminderCooldown = new HashSet<>();
 
-    public bPlaceOnInteractable() {
+    public bPlaceOnInteractable(bMain plugin) {
+        this.plugin = plugin;
         this.enable = bMain.getPluginConfig().getBoolean("better-placements.enable", true);
         this.placeOn = bMain.getPluginConfig().getBoolean("better-placements.place-on-interactables", true);
         this.slEnable = bMain.getPluginConfig().getBoolean("better-slabs.enable", true);
@@ -63,6 +68,8 @@ public class bPlaceOnInteractable implements Listener {
         this.replace = bMain.getPluginConfig().getBoolean("snow-layers.replace-snow-with-itself", true);
         this.pumpkin = bMain.getPluginConfig().getBoolean("better-placements.placeable-on-walls-and-roofs.enable", true);
         this.rail = bMain.getPluginConfig().getBoolean("better-placements.orientable-rails.enable",true);
+        this.signEnable = bMain.getPluginConfig().getBoolean("edit-sign.enable", true);
+        this.reminderSeconds = bMain.getPluginConfig().getInt("edit-sign.reminder-cooldown", 600);
     }
 
     @EventHandler(priority = Event.Priority.Highest, ignoreCancelled = true)
@@ -322,7 +329,7 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         if (placedBlock == Material.CAKE_BLOCK) {
-            if (!bBlockType.canSupportCake(underType)) {
+            if (!bBlockType.canSupportCakeAndFence(underType)) {
                 event.setCancelled(true);
                 bDebug.debug(player, bDebug.DebugType.INTERACT_CAKE, "UnderBlockType = " + underType);
                 return;
@@ -337,7 +344,16 @@ public class bPlaceOnInteractable implements Listener {
             }
 
         } else if (bBlockType.isFragileNeedGroundWhenWallPlaced(placedBlock, data)) {
-            if (bBlockType.isNotSolid(underType) &&
+            boolean noSupport;
+            if (placedBlock == Material.FENCE) {
+                noSupport = !bBlockType.canSupportCakeAndFence(underType);
+            } else if (placedBlock == Material.PUMPKIN || placedBlock == Material.JACK_O_LANTERN) {
+                noSupport = !bBlockType.canSupportPumpkins(underType);
+            } else {
+                noSupport = bBlockType.isNotSolid(underType);
+            }
+
+            if (noSupport &&
                     !((placedBlock == Material.PUMPKIN || placedBlock == Material.JACK_O_LANTERN || placedBlock == Material.FENCE)
                             && (player.hasPermission("SnapPlace.betterplacements.wallandroof") || player.isOp())
                             && pumpkin))
@@ -675,7 +691,7 @@ public class bPlaceOnInteractable implements Listener {
         }
 
         if (block.getType() == Material.SIGN_POST || block.getType() == Material.WALL_SIGN)
-            triggerEmptySignEvent(block, player);
+            triggerEmptySignEvent(block, player, itemType);
 
         removeOneItemFromHand(player);
         bDebug.debug(player, bDebug.DebugType.INTERACT_SUCCESS, "PlacedBlock = " + block.getType() + ", PlacedData = " + block.getData());
@@ -1142,13 +1158,28 @@ public class bPlaceOnInteractable implements Listener {
         return true;
     }
 
-    public static void triggerEmptySignEvent(Block placedBlock, Player player) {
+    public void triggerEmptySignEvent(Block placedBlock, Player player, Material itemType) {
         if (placedBlock == null || player == null)
             return;
 
         Material type = placedBlock.getType();
         if (type != Material.SIGN_POST && type != Material.WALL_SIGN)
             return;
+
+        UUID uuid = player.getUniqueId();
+
+        if ((player.isOp()
+                || player.hasPermission("SnapPlace.editsign"))
+                && signEnable
+                && !reminderCooldown.contains(uuid)
+                && itemType == Material.SIGN) {
+
+            reminderCooldown.add(uuid);
+            player.sendMessage(plugin.pName() + "§7Tip: §f/editsign §7to add text.");
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,
+                    () -> reminderCooldown.remove(uuid),
+                    reminderSeconds * 20L);
+        }
 
         String[] emptyLines = {"", "", "", ""};
         SignChangeEvent signEvent = new SignChangeEvent(placedBlock, player, emptyLines.clone());

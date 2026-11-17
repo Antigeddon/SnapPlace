@@ -120,7 +120,11 @@ public class bPlace implements Listener {
 
         Material underType = (targetBlock.getY() == 0) ? Material.AIR : blockUnder.getType();
 
-        if (!bBlockType.isNotSolid(underType)) {
+        boolean hasGroundSupport = (itemType == Material.FENCE)
+                ? bBlockType.canSupportCakeAndFence(underType)
+                : bBlockType.canSupportPumpkins(underType);
+
+        if (hasGroundSupport) {
             bDebug.debug(player, bDebug.DebugType.WRPLACE_BLOCK_UNDER_SOLID, "UnderBlockType = " + underType);
             return;
         }

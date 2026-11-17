@@ -11,6 +11,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -27,11 +28,13 @@ public class cEditSign implements Listener, CommandExecutor {
     private final Map<UUID, String[]> pendingSignEdits = new HashMap<>();
     private final Map<UUID, Integer> pendingTasks = new HashMap<>();
     private final boolean enabled;
+    private final boolean sneaking;
     private final int timeoutSeconds;
 
     public cEditSign(bMain plugin) {
         this.plugin = plugin;
         this.enabled = bMain.getPluginConfig().getBoolean("edit-sign.enable", true);
+        this.sneaking = bMain.getPluginConfig().getBoolean("edit-sign.need-sneaking", true);
         this.timeoutSeconds = bMain.getPluginConfig().getInt("edit-sign.command-timeout", 40);
     }
 
@@ -63,59 +66,38 @@ public class cEditSign implements Listener, CommandExecutor {
 
         List<String> rebuilt = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
-        boolean inParens = false;
 
         for (String a : args) {
-            if (!inParens) {
-                if (a.contains("(") && !a.contains(")")) {
-                    buffer.setLength(0);
-                    buffer.append(a);
-                    inParens = true;
-
-                } else {
-                    rebuilt.add(a);
-                }
-
-            } else {
+            if (a.toLowerCase().matches("l[1-4]:.*")) {
+                if (buffer.length() > 0) rebuilt.add(buffer.toString());
+                buffer.setLength(0);
+                buffer.append(a);
+            } else if (buffer.length() > 0) {
                 buffer.append(" ").append(a);
-                if (a.contains(")")) {
-                    rebuilt.add(buffer.toString());
-                    inParens = false;
-                }
             }
         }
-
-        if (inParens) {
-            player.sendMessage(plugin.pName() + "§cUnclosed parenthesis \"()\" in the command.");
-            return true;
-        }
+        if (buffer.length() > 0) rebuilt.add(buffer.toString());
 
         boolean hasPrefix = false;
         String[] lines = new String[4];
-
+        boolean[] specified = new boolean[4];
         for (int i = 0; i < 4; i++) lines[i] = "";
 
         for (String a : rebuilt) {
             String low = a.toLowerCase();
-
             if (low.matches("l[1-4]:.*")) {
                 hasPrefix = true;
                 int lineNum = a.charAt(1) - '1';
+                specified[lineNum] = true;
 
-                String content;
-
-                if (low.matches("l[1-4]:\\(.+\\)")) {
-                    content = a.substring(a.indexOf('(') + 1, a.lastIndexOf(')'));
-
+                if (low.matches("l[1-4]:\\(.*\\).*")) {
+                    lines[lineNum] = a.substring(a.indexOf('(') + 1, a.lastIndexOf(')'));
+                } else if (low.matches("l[1-4]:\\(.*")) {
+                    player.sendMessage(plugin.pName() + "§cUnclosed parenthesis \"()\" in the command.");
+                    return true;
                 } else {
-                    content = a.substring(3);
+                    lines[lineNum] = a.substring(3);
                 }
-
-                if (content.length() > 15) {
-                    content = content.substring(0, 15);
-                }
-
-                lines[lineNum] = content;
             }
         }
 
@@ -124,13 +106,23 @@ public class cEditSign implements Listener, CommandExecutor {
             return true;
         }
 
+
         player.sendMessage(plugin.pName() + "§eYou're about to modify a sign with this content:");
         for (int i = 0; i < 4; i++) {
-            String lineContent = lines[i];
-            if (lineContent == null || lineContent.isEmpty()) {
-                lineContent = "";
-            }
-            player.sendMessage("§eLine " + (i + 1) + ": §f[" + colorCodeSpecial(lineContent) + "§f]");
+            String lineContent = (lines[i] == null) ? "" : lines[i];
+            int len = lineContent.length();
+            String shown = (len > 15) ? lineContent.substring(0, 15) + "§c" + lineContent.substring(15) : lineContent;
+
+            String bracket = specified[i] ? "§f"
+                    : "§7";
+
+            String countPart = specified[i]
+                    ? " " + ((len > 15) ? "§4" : "§7") + "(" + len + ")"
+                    : " §8(Unchanged)";
+
+            player.sendMessage("§eLine " + (i + 1) + ": "
+                    + bracket + "[" + colorCodeSpecial(shown) + bracket + "]"
+                    + countPart);
         }
 
         if (pendingTasks.containsKey(player.getUniqueId())) {
@@ -138,7 +130,11 @@ public class cEditSign implements Listener, CommandExecutor {
         }
 
         pendingSignEdits.put(player.getUniqueId(), rebuilt.toArray(new String[0]));
-        player.sendMessage(plugin.pName() + "§eClick on the sign you want to modify.");
+
+        String applyMessage = sneaking
+                ? "§eSneak and click on the sign you want to modify."
+                : "§eClick on the sign you want to modify.";
+        player.sendMessage(plugin.pName() + applyMessage);
 
         int taskId = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             if (pendingSignEdits.containsKey(player.getUniqueId())) {
@@ -152,7 +148,7 @@ public class cEditSign implements Listener, CommandExecutor {
         return true;
     }
 
-    @EventHandler
+    @EventHandler(priority = Event.Priority.Highest, ignoreCancelled = true)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
@@ -161,6 +157,9 @@ public class cEditSign implements Listener, CommandExecutor {
             return;
 
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK && event.getAction() != Action.LEFT_CLICK_BLOCK)
+            return;
+
+        if (!player.isSneaking() && sneaking)
             return;
 
         Block block = event.getClickedBlock();
@@ -194,26 +193,12 @@ public class cEditSign implements Listener, CommandExecutor {
 
         for (String arg : args) {
             String lower = arg.toLowerCase();
-
-            if (lower.matches("l[1-4]:\\(.+\\)")) {
-
+            if (lower.matches("l[1-4]:\\(.*\\).*")) {
                 int lineNum = lower.charAt(1) - '1';
-                String content = arg.substring(arg.indexOf('(') + 1, arg.lastIndexOf(')'));
-
-                if (content.length() > 15) {
-                    content = content.substring(0, 15);
-                }
-                lines[lineNum] = content;
-
+                lines[lineNum] = arg.substring(arg.indexOf('(') + 1, arg.lastIndexOf(')'));
             } else if (lower.matches("l[1-4]:.*")) {
-
                 int lineNum = lower.charAt(1) - '1';
-                String content = arg.substring(3);
-
-                if (content.length() > 15) {
-                    content = content.substring(0, 15);
-                }
-                lines[lineNum] = content;
+                lines[lineNum] = arg.substring(3);
             }
         }
 
@@ -228,10 +213,16 @@ public class cEditSign implements Listener, CommandExecutor {
         blockBrokenState.setTypeId(0);
 
         ItemStack itemInHand = player.getInventory().getItemInHand();
-        BlockPlaceEvent placeEvent = new BlockPlaceEvent(targetBlock, blockBrokenState, targetBlock, itemInHand, player, true);
+
+        org.bukkit.material.Sign signData = (org.bukkit.material.Sign) sign.getData();
+        org.bukkit.block.BlockFace face = signData.getAttachedFace();
+        if (face == null) face = org.bukkit.block.BlockFace.DOWN;
+        Block support = targetBlock.getRelative(face);
+
+        BlockPlaceEvent placeEvent = new BlockPlaceEvent(targetBlock, blockBrokenState, support, itemInHand, player, true);
         Bukkit.getPluginManager().callEvent(placeEvent);
         if (placeEvent.isCancelled()) {
-            bDebug.debug(player, bDebug.DebugType.SIGN_PLACE_CANCELLED, "");
+            bDebug.debug(player, bDebug.DebugType.SIGN_PLACE_CANCELLED, "BlockType: " + targetBlock + ", Support: " + support);
             return;
         }
 
@@ -246,7 +237,9 @@ public class cEditSign implements Listener, CommandExecutor {
         String[] finalLines = signEvent.getLines();
 
         for (int i = 0; i < 4; i++) {
-            sign.setLine(i, finalLines[i]);
+            String line = finalLines[i];
+            if (line.length() > 15) line = line.substring(0, 15);
+            sign.setLine(i, line);
         }
 
         sign.update(true);
@@ -257,9 +250,12 @@ public class cEditSign implements Listener, CommandExecutor {
 
     private String colorCodeSpecial(String line) {
         StringBuilder result = new StringBuilder();
+        boolean above15 = false;
         for (int i = 0; i < line.length(); i++) {
             char c = line.charAt(i);
-            if (c == '&' && i + 1 < line.length()) {
+            if (c == '§') above15 = true;
+
+            if (!above15 && c == '&' && i + 1 < line.length()) {
                 char next = line.charAt(i + 1);
                 if ("0123456789abcdef".indexOf(Character.toLowerCase(next)) != -1) {
                     result.append("§").append(next).append("&").append(next).append("§f");
@@ -269,6 +265,6 @@ public class cEditSign implements Listener, CommandExecutor {
             }
             result.append(c);
         }
-        return result.toString();
+        return "§f" + result + "§f";
     }
 }

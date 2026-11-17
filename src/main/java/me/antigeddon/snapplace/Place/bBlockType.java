@@ -150,7 +150,7 @@ public class bBlockType {
         }
     }
 
-    public static boolean canSupportCake(Material material) {
+    public static boolean canSupportCakeAndFence(Material material) {
         switch (material) {
             case STONE:
             case GRASS:
@@ -278,6 +278,58 @@ public class bBlockType {
             case BOOKSHELF:
             case MOSSY_COBBLESTONE:
             case OBSIDIAN:
+            case CHEST:
+            case DIAMOND_ORE:
+            case DIAMOND_BLOCK:
+            case WORKBENCH:
+            case FURNACE:
+            case BURNING_FURNACE:
+            case REDSTONE_ORE:
+            case GLOWING_REDSTONE_ORE:
+            case SNOW_BLOCK:
+            case CLAY:
+            case JUKEBOX:
+            case PUMPKIN:
+            case NETHERRACK:
+            case SOUL_SAND:
+            case GLOWSTONE:
+            case JACK_O_LANTERN:
+            case LOCKED_CHEST:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static boolean canSupportPumpkins(Material material) {
+        switch (material) {
+            case STONE:
+            case GRASS:
+            case DIRT:
+            case COBBLESTONE:
+            case WOOD:
+            case BEDROCK:
+            case SAND:
+            case GRAVEL:
+            case GOLD_ORE:
+            case IRON_ORE:
+            case COAL_ORE:
+            case LOG:
+            case SPONGE:
+            case LAPIS_ORE:
+            case LAPIS_BLOCK:
+            case DISPENSER:
+            case SANDSTONE:
+            case NOTE_BLOCK:
+            case WOOL:
+            case GOLD_BLOCK:
+            case IRON_BLOCK:
+            case DOUBLE_STEP:
+            case BRICK:
+            case BOOKSHELF:
+            case MOSSY_COBBLESTONE:
+            case OBSIDIAN:
+            case MOB_SPAWNER:
             case CHEST:
             case DIAMOND_ORE:
             case DIAMOND_BLOCK:
